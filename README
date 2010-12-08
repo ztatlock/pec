@@ -1,0 +1,16 @@
+Bouncer : only let in the good optimizations.
+
+INTRO
+
+  This software implements the checking algorithm from 'Proving
+  Optimizations Correct using Parameterized Program Equivalence' by Kundu,
+  Tatlock, and Lerner in PLDI 2009. Bouncer attempts to automatically prove
+  that a given optimization always preserves program behavior.
+
+BUILDING
+
+  Bouncer depends on the OCaml language and supporting tools.
+
+  $ mkdir bin
+  $ make
+
