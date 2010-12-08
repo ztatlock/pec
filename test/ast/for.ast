@@ -1,0 +1,6 @@
+expr E
+stmt S
+
+for(S; E; S) {
+  S;
+}

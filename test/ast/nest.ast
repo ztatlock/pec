@@ -1,0 +1,125 @@
+expr E
+stmt S
+
+if(E) {
+  if(E) {
+    S;
+  }
+}
+
+if(E) {
+  if(E) {
+    S;
+  } else {
+    S;
+  }
+}
+
+if(E) {
+  while(E) {
+    S;
+  }
+}
+
+if(E) {
+  for(S; E; S) {
+    S;
+  }
+}
+
+if(E) {
+  if(E) {
+    S;
+  }
+} else {
+  if(E) {
+    S;
+  }
+}
+
+if(E) {
+  if(E) {
+    S;
+  } else {
+    S;
+  }
+} else {
+  if(E) {
+    S;
+  } else {
+    S;
+  }
+}
+
+if(E) {
+  while(E) {
+    S;
+  }
+} else {
+  while(E) {
+    S;
+  }
+}
+
+if(E) {
+  for(S; E; S) {
+    S;
+  }
+} else {
+  for(S; E; S) {
+    S;
+  }
+}
+
+while(E) {
+  if(E) {
+    S;
+  }
+}
+
+while(E) {
+  if(E) {
+    S;
+  } else {
+    S;
+  }
+}
+
+while(E) {
+  while(E) {
+    S;
+  }
+}
+
+while(E) {
+  for(S; E; S) {
+    S;
+  }
+}
+
+for(S; E; S) {
+  if(E) {
+    S;
+  }
+}
+
+for(S; E; S) {
+  if(E) {
+    S;
+  } else {
+    S;
+  }
+}
+
+for(S; E; S) {
+  while(E) {
+    S;
+  }
+}
+
+for(S; E; S) {
+  for(S; E; S) {
+    S;
+  }
+}
+

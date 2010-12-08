@@ -1,0 +1,28 @@
+expr E
+stmt S1
+stmt S2
+stmt S3
+
+S1;
+S2;
+
+if(E) {
+  S1;
+  S2;
+}
+
+if(E) {
+  S1;
+} else {
+  S2;
+}
+
+while(E) {
+  S1;
+  S2;
+}
+
+for(S1; E; S2) {
+  S3;
+}
+
