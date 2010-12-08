@@ -5,7 +5,7 @@ FLAGS = \
 
 all:
 	mkdir -p ../bin
-	$(BUILD) $(FLAGS) bouncer.native
+	$(BUILD) $(FLAGS) bouncer.byte
 
 clean:
 	$(BUILD) $(FLAGS) -clean
