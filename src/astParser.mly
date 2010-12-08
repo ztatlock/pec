@@ -161,7 +161,7 @@ expr:
       { match lkup_decl $1 with
         | OrigDecl -> Var (Orig $1)
         | TempDecl -> Var (Temp $1)
-        | ExprDecl -> ExprParam ($1, [])
+        | ExprDecl -> ExprParam ($1)
         | _ ->
             failwith (mkstr "'%s' not declared as var or expr." $1)
       }
@@ -201,11 +201,32 @@ side_conds:
       { $1 :: $3 }
 
 side_cond:
-  | PURE     { Pure        }
-  | NOREAD   { NoRead $1   }
-  | NOWRITE  { NoWrite $1  }
-  | NOAFFECT { NoAffect $1 }
-  | COMMUTES { Commutes $1 }
+  | NOREAD 
+      { match lkup_decl $1 with
+        | OrigDecl -> NoRead (Orig $1)
+        | TempDecl -> NoRead (Temp $1)
+        | _ ->
+            failwith (mkstr "noread: '%s' not declared as var." $1)
+      }
+  | NOWRITE
+      { match lkup_decl $1 with
+        | OrigDecl -> NoWrite (Orig $1)
+        | TempDecl -> NoWrite (Temp $1)
+        | _ ->
+            failwith (mkstr "nowrite: '%s' not declared as var." $1)
+      }
+  | NOAFFECT
+      { match lkup_decl $1 with
+        | ExprDecl -> NoAffect (ExprParam $1)
+        | _ ->
+            failwith (mkstr "noaffect: '%s' not declared as expr." $1)
+      }
+  | COMMUTES
+      { match lkup_decl $1 with
+        | StmtDecl -> Commutes (StmtParam ($1, []))
+        | _ ->
+            failwith (mkstr "commutes: '%s' not declared as stmt." $1)
+      }
 
 %%
 

@@ -4,13 +4,6 @@ open Common.ZPervasives
 
 type id = string
 
-type side_cond =
-  | Pure           (* does not change state *)
-  | NoRead   of id (* does not read var *)
-  | NoWrite  of id (* does not write var *)
-  | NoAffect of id (* expr evals the same before and after *)
-  | Commutes of id (* swapping exec order yields same state *)
-
 type var =
   | Orig of id (* must be preserved *)
   | Temp of id (* fresh var, no need to preserve *)
@@ -46,15 +39,20 @@ type expr =
   | Var       of var
   | Unop      of unop * expr
   | Binop     of binop * expr * expr
-  | ExprParam of id * side_cond list
+  | ExprParam of id
 
 type instr =
   | Nop
   | Assign    of var * expr
-  | ExprInstr of expr
   | Assume    of expr
   | StmtParam of id * side_cond list
   (* TODO : StmtParam with holes : S[I] *)
+
+and side_cond =
+  | NoRead   of var   (* does not read var *)
+  | NoWrite  of var   (* does not write var *)
+  | NoAffect of expr  (* expr evals the same before and after *)
+  | Commutes of instr (* swapping exec order yields same state *)
 
 type stmt =
   | Instr  of instr
