@@ -3,7 +3,7 @@
 source $BOUNCER/script/common
 
 function tester {
-  bouncer.byte $1 > $BOUNCER/output/test-ast-$2 2>&1 
+  checkParser.byte $1 > $BOUNCER/output/test-ast-$2 2>&1 
 }
 
 for t in $BOUNCER/test/ast/*.ast; do
