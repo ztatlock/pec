@@ -11,6 +11,7 @@ BUILDING
 
   Bouncer depends on the OCaml language and supporting tools.
 
-  $ mkdir bin
-  $ make
+  To build simply:
+
+    $ make
 
