@@ -121,11 +121,11 @@ basic_stmt:
       { IfElse ($3, $6, $10) }
   | WHILE LPAREN expr RPAREN LCURL stmt RCURL
       { While ($3, $6) }
-  | FOR LPAREN stmt SEMI expr SEMI stmt RPAREN LCURL stmt RCURL
+  | FOR LPAREN instr SEMI expr SEMI instr RPAREN LCURL stmt RCURL
       { let h =
-          { init   = $3
+          { init   = Instr $3
           ; guard  = $5
-          ; update = $7
+          ; update = Instr $7
           }
         in
         For (h, $10)

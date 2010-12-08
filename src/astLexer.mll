@@ -7,7 +7,7 @@ open AstParser
 }
 
 let id =
-  ['a'-'z''A'-'Z']+
+  ['a'-'z''A'-'Z']['a'-'z''A'-'Z''0'-'9']*
 
 let intlit =
   "0" | '-'?['1'-'9']['0'-'9']*
@@ -73,7 +73,7 @@ rule token = parse
   (* declarations *)
   | "orig" { ORIG_DECL }
   | "temp" { TEMP_DECL }
-  | "epxr" { EXPR_DECL }
+  | "expr" { EXPR_DECL }
   | "stmt" { STMT_DECL }
 
   (* misc *)
