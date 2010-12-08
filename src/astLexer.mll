@@ -1,8 +1,25 @@
-{ open AstParser }
+{
 
-let id = ['a'-'z''A'-'Z']+
+open Common.ZPervasives
+open Prog
+open AstParser 
 
-let intlit = "0" | '-'?['1'-'9']['0'-'9']*
+}
+
+let id =
+  ['a'-'z''A'-'Z']+
+
+let intlit =
+  "0" | '-'?['1'-'9']['0'-'9']*
+
+let comment =
+  "#"[^'\n']*
+
+let whitespace =
+  [' ' '\t']
+
+let line =
+  '\n'
 
 rule token = parse
   (* side conditions *)
@@ -17,10 +34,8 @@ rule token = parse
   | "commutes(" (id as x) ")"
       { COMMUTES x }
 
-  (* unary operators *)
+  (* operators *)
   | "!"  { NOT }
-
-  (* binary operators *)
   | "||" { OR  }
   | "&&" { AND }
   | "==" { EQ  }
@@ -35,17 +50,18 @@ rule token = parse
   | "/"  { DIV }
 
   (* literals *)
+  | intlit as x
+      { INTLIT (int_of_string x) }
   | "true"
       { BOOLLIT true }
   | "false"
       { BOOLLIT false }
-  | intlit as x
-      { INTLIT (int_of_string x) }
 
   (* instructions *)
   | "nop"    { NOP    }
   | "="      { ASSIGN }
   | "assume" { ASSUME }
+  | "where"  { WHERE  }
 
   (* control flow *)
   | ";"     { SEMI  }
@@ -54,13 +70,30 @@ rule token = parse
   | "while" { WHILE }
   | "for"   { FOR   }
 
-  (* variables *)
-  | id as x
-      { ID x }
+  (* declarations *)
+  | "orig" { ORIG_DECL }
+  | "temp" { TEMP_DECL }
+  | "epxr" { EXPR_DECL }
+  | "stmt" { STMT_DECL }
 
   (* misc *)
+  | "," { COMMA  }
   | "(" { LPAREN }
   | ")" { RPAREN }
   | "{" { LCURL  }
   | "}" { RCURL  }
+  | eof { EOF    }
+
+  (* variables *)
+  | id as x
+      { ID x }
+            
+  (* ignore *)
+  | comment    { token lexbuf }
+  | whitespace { token lexbuf }
+  | line       { incr line; token lexbuf }
+
+  (* error *)
+  | _ as c
+      { failwith (mkstr "AstLexer: char %c on line %d" c !line) }
 

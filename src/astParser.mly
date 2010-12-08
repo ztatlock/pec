@@ -1,4 +1,31 @@
-%{ open Prog %}
+%{
+
+open Common.ZPervasives
+open Prog
+
+type decl =
+  | OrigDecl
+  | TempDecl
+  | ExprDecl
+  | StmtDecl
+  | Unknown
+
+let env =
+  ref []
+
+let add_decl id decl =
+  env := (id, decl) :: !env
+
+let lkup_decl id =
+  try
+    List.assoc id !env
+  with Not_found ->
+    Unknown
+
+let parse_error s =
+  failwith (mkstr "AstParser: error on line %d" !line)
+
+%}
 
 %token           PURE
 %token <Prog.id> NOREAD
@@ -20,12 +47,13 @@
 %token MUL
 %token DIV
 
-%token <bool> BOOLLIT
 %token <int>  INTLIT
+%token <bool> BOOLLIT
 
 %token NOP
 %token ASSIGN
 %token ASSUME
+%token WHERE
 
 %token SEMI
 %token IF
@@ -33,21 +61,50 @@
 %token WHILE
 %token FOR
 
-%token <Prog.id> ID
+%token ORIG_DECL
+%token TEMP_DECL
+%token EXPR_DECL
+%token STMT_DECL
 
+%token COMMA
 %token LPAREN
 %token RPAREN
 %token LCURL
 %token RCURL
+%token EOF
+
+%token <Prog.id> ID
 
 %start ast
 %type <Prog.ast> ast
 
+%left OR
+%left AND
+%nonassoc EQ NEQ
+%nonassoc LT LTE GT GTE
+%left ADD SUB
+%left MUL DIV
+%nonassoc NOT
+
 %%
 
 ast:
-  | stmt
-     { {root = $1} }
+  | decls stmt EOF
+     { {root = $2} }
+
+decls:
+  |            { }
+  | decl decls { }
+
+decl:
+  | ORIG_DECL ID
+      { add_decl $2 OrigDecl }
+  | TEMP_DECL ID
+      { add_decl $2 TempDecl }
+  | EXPR_DECL ID
+      { add_decl $2 ExprDecl }
+  | STMT_DECL ID
+      { add_decl $2 StmtDecl }
 
 stmt:
   | basic_stmt
@@ -77,12 +134,78 @@ basic_stmt:
 instr:
   | NOP
       { Nop }
+  | ID ASSIGN expr
+      { match lkup_decl $1 with
+        | OrigDecl -> Assign (Orig $1, $3) 
+        | TempDecl -> Assign (Temp $1, $3) 
+        | _ ->
+            failwith (mkstr "'%s' not declared as var." $1)
+      }
+  | ASSUME LPAREN expr RPAREN
+      { Assume $3 }
+  | ID
+      { StmtParam ($1, []) }
+  | ID WHERE side_conds
+      { StmtParam ($1, $3) }
 
 expr:
-  | BOOLLIT
-      { BoolLit $1 }
   | INTLIT
       { IntLit $1 }
+  | BOOLLIT
+      { BoolLit $1 }
+  | NOT expr
+      { Unop (Not, $2) }
+  | binop
+      { $1 }
+  | ID
+      { match lkup_decl $1 with
+        | OrigDecl -> Var (Orig $1)
+        | TempDecl -> Var (Temp $1)
+        | ExprDecl -> ExprParam ($1, [])
+        | _ ->
+            failwith (mkstr "'%s' not declared as var or expr." $1)
+      }
+  | LPAREN expr RPAREN
+      { $2 }
+
+binop:
+  | expr AND expr
+      { Binop (And, $1, $3) }
+  | expr OR expr
+      { Binop (Or, $1, $3) }
+  | expr EQ expr
+      { Binop (Eq, $1, $3) }
+  | expr NEQ expr
+      { Binop (Neq, $1, $3) }
+  | expr LT expr
+      { Binop (Lt, $1, $3) }
+  | expr LTE expr
+      { Binop (Lte, $1, $3) }
+  | expr GT expr
+      { Binop (Gt, $1, $3) }
+  | expr GTE expr
+      { Binop (Gte, $1, $3) }
+  | expr ADD expr
+      { Binop (Add, $1, $3) }
+  | expr SUB expr
+      { Binop (Sub, $1, $3) }
+  | expr MUL expr
+      { Binop (Mul, $1, $3) }
+  | expr DIV expr
+      { Binop (Div, $1, $3) }
+
+side_conds:
+  | side_cond
+      { $1 :: [] }
+  | side_cond COMMA side_conds
+      { $1 :: $3 }
+
+side_cond:
+  | PURE     { Pure        }
+  | NOREAD   { NoRead $1   }
+  | NOWRITE  { NoWrite $1  }
+  | NOAFFECT { NoAffect $1 }
+  | COMMUTES { Commutes $1 }
 
 %%
 

@@ -169,3 +169,11 @@ let ast_cfg a =
   in
   { enter = add a.root (mknode ()) }
 
+(* line tracking for AST lexer and parser *)
+
+let line =
+  ref 1
+
+let reset_line () =
+  line := 1
+
