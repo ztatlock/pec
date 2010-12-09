@@ -21,6 +21,22 @@ end
 
 open ZPervasives
 
+let last l =
+  l |> List.rev
+    |> List.hd
+
+let uniq l =
+  let rec loop acc = function
+    | [] ->
+        List.rev acc
+    | h::t ->
+        if List.mem h acc then
+          loop acc t
+        else
+          loop (h::acc) t
+  in
+  loop [] l
+
 let pair_up l rs =
   List.map (fun r -> (l, r)) rs
 
