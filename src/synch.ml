@@ -2,16 +2,7 @@
 
 open Common.ZPervasives
 
-(* set to track pairs of nodes already searched *)
-
-module NodePair = struct
-  type t =
-    Prog.node * Prog.node
-  let compare (a, b) (c, d) =
-    let (w, x) = (a.Prog.nid, b.Prog.nid) in
-    let (y, z) = (c.Prog.nid, d.Prog.nid) in
-    Pervasives.compare (w, x) (y, z)
-end
+(* set for tracking pairs of nodes already searched *)
 
 module Marks = Set.Make(NodePair)
 
@@ -47,7 +38,6 @@ let is_boring_instr = function
   | Prog.Nop ->
       true
   | Prog.Assign (_, e)
-  | Prog.ExprInstr e
   | Prog.Assume e ->
       is_boring_expr e
   | Prog.StmtParam _ ->
@@ -101,9 +91,11 @@ and walk pl pr =
       add_paths (List.rev pl) (List.rev pr);
       start l r
 
-let infer l r =
+let infer rwr =
   reset_marks ();
   reset_paths ();
-  start l.Prog.enter r.Prog.enter;
-  !paths
+  start
+    rwr.Rewrite.cfgl.Prog.enter
+    rwr.Rewrite.cfgr.Prog.enter;
+  { rwr with Rewrite.paths = !paths }
 

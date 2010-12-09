@@ -27,11 +27,8 @@ let parse_error s =
 
 %}
 
-%token           PURE
-%token <Prog.id> NOREAD
-%token <Prog.id> NOWRITE
-%token <Prog.id> NOAFFECT
-%token <Prog.id> COMMUTES
+%token FIND
+%token REPLACE
 
 %token NOT
 %token OR
@@ -55,6 +52,12 @@ let parse_error s =
 %token ASSUME
 %token WHERE
 
+%token           PURE
+%token <Prog.id> NOREAD
+%token <Prog.id> NOWRITE
+%token <Prog.id> NOAFFECT
+%token <Prog.id> COMMUTES
+
 %token SEMI
 %token IF
 %token ELSE
@@ -75,8 +78,8 @@ let parse_error s =
 
 %token <Prog.id> ID
 
-%start ast
-%type <Prog.ast> ast
+%start rewrite
+%type <Prog.ast * Prog.ast> rewrite
 
 %left OR
 %left AND
@@ -88,9 +91,12 @@ let parse_error s =
 
 %%
 
-ast:
-  | decls stmt EOF
-     { {root = $2} }
+rewrite:
+  | decls FIND stmt REPLACE stmt EOF
+      { let l = { root = $3 } in
+        let r = { root = $5 } in
+        (l, r)
+      }
 
 decls:
   |            { }

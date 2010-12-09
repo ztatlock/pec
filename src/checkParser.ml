@@ -1,3 +1,6 @@
+open Common.ZPervasives
 
-let _ = Util.arg_cfg 1
+let _ =
+  1 |> Array.get Sys.argv
+    |> Rewrite.parse
 

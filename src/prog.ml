@@ -86,6 +86,9 @@ and edge =
 type cfg =
   { enter : node }
 
+type path =
+  node list
+
 (* AST utilities *)
 
 let assume c =
@@ -171,7 +174,4 @@ let ast_cfg a =
 
 let line =
   ref 1
-
-let reset_line () =
-  line := 1
 

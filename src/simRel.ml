@@ -1,0 +1,4 @@
+
+let infer x =
+  x
+

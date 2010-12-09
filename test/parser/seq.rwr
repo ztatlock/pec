@@ -2,6 +2,8 @@ orig I
 expr E
 stmt S
 
+---
+
 nop;
 I = E;
 S;
@@ -19,3 +21,8 @@ while(E) {
 for(S; E; S) {
   S;
 }
+
++++
+
+nop;
+

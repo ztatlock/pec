@@ -2,7 +2,7 @@
 
 open Common.ZPervasives
 open Prog
-open AstParser 
+open RewriteParser 
 
 }
 
@@ -22,17 +22,9 @@ let line =
   '\n'
 
 rule token = parse
-  (* side conditions *)
-  | "pure"
-      { PURE }
-  | "noread(" (id as x) ")"
-      { NOREAD x }
-  | "nowrite(" (id as x) ")"
-      { NOWRITE x }
-  | "noaffect(" (id as x) ")"
-      { NOAFFECT x }
-  | "commutes(" (id as x) ")"
-      { COMMUTES x }
+  (* pattern delimeters *)
+  | "---" { FIND    }
+  | "+++" { REPLACE }
 
   (* operators *)
   | "!"  { NOT }
@@ -62,6 +54,18 @@ rule token = parse
   | "="      { ASSIGN }
   | "assume" { ASSUME }
   | "where"  { WHERE  }
+
+  (* side conditions *)
+  | "pure"
+      { PURE }
+  | "noread(" (id as x) ")"
+      { NOREAD x }
+  | "nowrite(" (id as x) ")"
+      { NOWRITE x }
+  | "noaffect(" (id as x) ")"
+      { NOAFFECT x }
+  | "commutes(" (id as x) ")"
+      { COMMUTES x }
 
   (* control flow *)
   | ";"     { SEMI  }

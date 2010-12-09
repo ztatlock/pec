@@ -1,19 +1,22 @@
+let tick = ref 0
 
 module ZPervasives = struct
   let (|>) x f = f x
 
+  (* fast forward *)
   let ff f x =
     f x |> ignore;
     x
-
-  let tick = ref 0
 
   let tock () =
     tick := !tick + 1;
     !tick
 
-  let printf = Printf.printf
-  let mkstr  = Printf.sprintf
+  let pair_map f (a, b) =
+    (f a, f b)
+
+  let print = Printf.printf
+  let mkstr = Printf.sprintf
 end
 
 open ZPervasives

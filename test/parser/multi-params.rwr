@@ -3,6 +3,8 @@ stmt S1
 stmt S2
 stmt S3
 
+---
+
 S1;
 S2;
 
@@ -25,4 +27,8 @@ while(E) {
 for(S1; E; S2) {
   S3;
 }
+
++++
+
+nop;
 
