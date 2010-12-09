@@ -140,19 +140,25 @@ basic_stmt:
 instr:
   | NOP
       { Nop }
-  | ID ASSIGN expr
-      { match lkup_decl $1 with
-        | OrigDecl -> Assign (Orig $1, $3) 
-        | TempDecl -> Assign (Temp $1, $3) 
-        | _ ->
-            failwith (mkstr "'%s' not declared as var." $1)
-      }
+  | var ASSIGN expr
+      { Assign ($1, $3) }
+  | var ADD ADD
+      { Assign ($1, Binop (Add, Var $1, IntLit 1)) }
   | ASSUME LPAREN expr RPAREN
       { Assume $3 }
   | ID
       { StmtParam ($1, []) }
   | ID WHERE side_conds
       { StmtParam ($1, $3) }
+
+var:
+  | ID
+      { match lkup_decl $1 with
+        | OrigDecl -> Orig $1
+        | TempDecl -> Temp $1
+        | _ ->
+            failwith (mkstr "'%s' not declared as var." $1)
+      }
 
 expr:
   | INTLIT
