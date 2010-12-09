@@ -3,8 +3,7 @@
 source $BOUNCER/script/common
 
 function tester {
-  checkParser.byte $1 > \
-    $BOUNCER/output/test-parser-$2 2>&1 
+  checkParser $1 > $BOUNCER/output/test-parser-$2 2>&1 
 }
 
 for t in $BOUNCER/test/parser/*.rwr; do
