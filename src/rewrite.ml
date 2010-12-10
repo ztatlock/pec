@@ -20,6 +20,21 @@ let mk_rewrite (l, r) =
   ; simrel = []
   }
 
+let set_paths rwr ps =
+  { rwr with paths = ps }
+
+let set_simrel rwr sr =
+  { rwr with simrel = sr }
+
+let simrel_entry rwr np =
+  try
+    List.assoc np rwr.simrel
+  with Not_found ->
+    failwith
+      (mkstr "no simrel entry at: (%d, %d)"
+        (fst np).Prog.nid
+        (snd np).Prog.nid)
+
 let parse file =
   file |> Common.file_str
        |> Lexing.from_string
