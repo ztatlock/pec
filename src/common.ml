@@ -25,6 +25,11 @@ let last l =
   l |> List.rev
     |> List.hd
 
+let drop_last l =
+  l |> List.rev
+    |> List.tl
+    |> List.rev
+
 let uniq l =
   let rec loop acc = function
     | [] ->
