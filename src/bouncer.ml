@@ -13,9 +13,7 @@ let parse_args () =
   let rec loop i =
     if i < nargs then begin
       match Sys.argv.(i) with
-      | "input"
-      | "-input"
-      | "--input" ->
+      | "-input" ->
           if i+1 < nargs then begin
             Flags.set_flag "input" Sys.argv.(i+1);
             loop (i + 2)

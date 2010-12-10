@@ -89,6 +89,59 @@ type cfg =
 type path =
   node list
 
+(* string representations *)
+
+let var_str = function
+  | Orig id
+  | Temp id ->
+      id
+
+let unop_str = function
+  | Not -> "!"
+
+let binop_str = function
+  | Or  -> "||"
+  | And -> "&&"
+  | Eq  -> "=="
+  | Neq -> "!="
+  | Lt  -> "<"
+  | Lte -> "<="
+  | Gt  -> ">"
+  | Gte -> ">="
+  | Add -> "+"
+  | Sub -> "-"
+  | Mul -> "*"
+  | Div -> "/"
+
+let rec expr_str = function
+  | IntLit i ->
+      mkstr "%d" i
+  | BoolLit b ->
+      mkstr "%b" b
+  | Var v ->
+      var_str v
+  | Unop (op, e) ->
+      mkstr "(%s %s)"
+        (unop_str op)
+        (expr_str e)
+  | Binop (op, l, r) ->
+      mkstr "(%s %s %s)"
+        (binop_str op)
+        (expr_str l)
+        (expr_str r)
+  | ExprParam id ->
+      id
+
+let instr_str = function
+  | Nop ->
+      "nop"
+  | Assign (v, e) ->
+      mkstr "%s = %s" (var_str v) (expr_str e)
+  | Assume e ->
+      mkstr "assume(%s)" (expr_str e)
+  | StmtParam (id, _) ->
+      id
+
 (* AST utilities *)
 
 let assume c =
@@ -132,6 +185,9 @@ let succs n =
     (fun e -> e.snk)
     n.out_edges
 
+let nid n =
+  n.nid
+
 (* convert AST to CFG *)
 
 let ast_cfg a =
@@ -170,7 +226,22 @@ let ast_cfg a =
   in
   { enter = add a.root (mknode ()) }
 
-(* line tracking for AST lexer and parser *)
+(* path utilities *)
+
+let fromto src snk =
+  List.find
+    (fun e -> e.src.nid = src.nid)
+    snk.in_edges
+
+let path_edges p =
+  let srcs = Common.drop_last p in
+  let snks = List.tl p in
+  List.map2 fromto srcs snks
+
+let edge_instr e =
+  e.instr
+
+(* line tracking for rewrite lexer and parser *)
 
 let line =
   ref 1
