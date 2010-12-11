@@ -92,55 +92,105 @@ type path =
 (* string representations *)
 
 let var_str = function
-  | Orig id
-  | Temp id ->
-      id
+  | Orig id -> mkstr "(Orig %s)" id
+  | Temp id -> mkstr "(Temp %s)" id
 
 let unop_str = function
-  | Not -> "!"
+  | Not -> "Not"
 
 let binop_str = function
-  | Or  -> "||"
-  | And -> "&&"
-  | Eq  -> "=="
-  | Neq -> "!="
-  | Lt  -> "<"
-  | Lte -> "<="
-  | Gt  -> ">"
-  | Gte -> ">="
-  | Add -> "+"
-  | Sub -> "-"
-  | Mul -> "*"
-  | Div -> "/"
+  | Or  -> "Or"
+  | And -> "And"
+  | Eq  -> "Eq"
+  | Neq -> "Neq"
+  | Lt  -> "Lt"
+  | Lte -> "Lte"
+  | Gt  -> "Gt"
+  | Gte -> "Gte"
+  | Add -> "Add"
+  | Sub -> "Sub"
+  | Mul -> "Mul"
+  | Div -> "Div"
 
 let rec expr_str = function
   | IntLit i ->
-      mkstr "%d" i
+      mkstr "(IntLit %d)" i
   | BoolLit b ->
-      mkstr "%b" b
+      mkstr "(BoolLit %b)" b
   | Var v ->
-      var_str v
+      mkstr "(Var %s)"
+        (var_str v)
   | Unop (op, e) ->
-      mkstr "(%s %s)"
+      mkstr "(UnOp %s %s)"
         (unop_str op)
         (expr_str e)
   | Binop (op, l, r) ->
-      mkstr "(%s %s %s)"
+      mkstr "(BinOp %s %s %s)"
         (binop_str op)
         (expr_str l)
         (expr_str r)
   | ExprParam id ->
-      id
+      mkstr "(ExprParam %s)" id
 
-let instr_str = function
+let rec instr_str = function
   | Nop ->
-      "nop"
+      "Nop"
   | Assign (v, e) ->
-      mkstr "%s = %s" (var_str v) (expr_str e)
+      mkstr "(Assign %s %s)"
+        (var_str v)
+        (expr_str e)
   | Assume e ->
-      mkstr "assume(%s)" (expr_str e)
-  | StmtParam (id, _) ->
-      id
+      mkstr "(Assume %s)"
+        (expr_str e)
+  | StmtParam (id, scs) ->
+      scs |> List.map side_cond_str
+          |> String.concat " "
+          |> mkstr "(StmtParam %s %s)" id
+
+and side_cond_str = function
+  | NoRead v ->
+      mkstr "(noread %s)" (var_str v)
+  | NoWrite v ->
+      mkstr "(nowrite %s)" (var_str v)
+  | NoAffect e ->
+      mkstr "(noaffect %s)" (expr_str e)
+  | Commutes i ->
+      mkstr "(commutes %s)" (instr_str i)
+
+let rec stmt_str = function
+  | Instr i ->
+      mkstr "(Instr %s)"
+        (instr_str i)
+  | Seq (s1, s2) ->
+      mkstr "(Seq %s %s)"
+        (stmt_str s1)
+        (stmt_str s2)
+  | If (c, sT) ->
+      mkstr "(If %s %s)"
+        (expr_str c)
+        (stmt_str sT)
+  | IfElse (c, sT, sF) ->
+      mkstr "(IfElse %s %s %s)"
+        (expr_str c)
+        (stmt_str sT)
+        (stmt_str sF)
+  | While (c, b) ->
+      mkstr "(While %s %s)"
+        (expr_str c)
+        (stmt_str b)
+  | For (h, b) ->
+      mkstr "(For %s %s)"
+        (for_header_str h)
+        (stmt_str b)
+
+and for_header_str h =
+  mkstr "(ForHeader %s %s %s)"
+    (stmt_str h.init)
+    (expr_str h.guard)
+    (stmt_str h.update)
+
+let ast_str a =
+  stmt_str a.root
 
 (* AST utilities *)
 

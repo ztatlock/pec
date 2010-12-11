@@ -6,7 +6,7 @@ TEST="$BOUNCER/test/parser/*.rwr"
 OUTP="$BOUNCER/output/test-parser"
 
 function run {
-  checkParser $1 > $OUTP-$2 2>&1
+  ckparse $1 > $OUTP-$2 2>&1
 }
 
 function check {

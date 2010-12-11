@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
 
-PATH=$BOUNCER/bin:$BOUNCER/script:$PATH
+PATH=$BOUNCER/bin:$PATH
 
 # ensure output dir exists
 mkdir -p $BOUNCER/output
 
 # ANSI color codes
-AC_NONE=$'\033[0m'
-AC_GREEN=$'\033[1;32m'
-AC_CYAN=$'\033[1;36m'
-AC_RED=$'\033[1;31m'
-AC_BLUE=$'\033[1;34m'
-AC_YELLOW=$'\033[1;33m'
-AC_WHITE_RED=$'\033[1;37m\033[41m'
+AC_NO=$'\033[0m'
+AC_GR=$'\033[1;32m'
+AC_CY=$'\033[1;36m'
+AC_RD=$'\033[1;31m'
+AC_BL=$'\033[1;34m'
+AC_YL=$'\033[1;33m'
+AC_WR=$'\033[1;37m\033[41m'
 
-PASS="${AC_GREEN}PASS${AC_NONE}"
-FAIL="${AC_RED}FAIL${AC_NONE}"
+PASS="${AC_GR}PASS${AC_NO}"
+FAIL="${AC_RD}FAIL${AC_NO}"
 

@@ -10,8 +10,8 @@ all:
 	mkdir -p ../bin
 	$(BUILD) $(FLAGS) bouncer.byte
 	$(SLINK) ../bin/bouncer.byte ../bin/bouncer
-	$(BUILD) $(FLAGS) checkParser.byte
-	$(SLINK) ../bin/checkParser.byte ../bin/checkParser
+	$(BUILD) $(FLAGS) ckparse.byte
+	$(SLINK) ../bin/ckparse.byte ../bin/ckparse
 
 clean:
 	$(BUILD) $(FLAGS) -clean
