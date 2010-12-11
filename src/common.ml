@@ -66,3 +66,8 @@ let readlines file =
 let file_str f =
   String.concat "\n" (readlines f)
 
+let str_file fn s =
+  let f = open_out fn in
+  output_string f s;
+  close_out f
+
