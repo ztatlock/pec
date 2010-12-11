@@ -8,9 +8,9 @@ FLAGS = \
 
 all:
 	mkdir -p ../bin
-	$(BUILD) $(FLAGS) bouncer.byte
-	$(SLINK) ../bin/bouncer.byte ../bin/bouncer
+	$(BUILD) $(FLAGS) pec.byte
 	$(BUILD) $(FLAGS) ckparse.byte
+	$(SLINK) ../bin/pec.byte ../bin/pec
 	$(SLINK) ../bin/ckparse.byte ../bin/ckparse
 
 clean:
