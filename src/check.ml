@@ -1,16 +1,6 @@
 
 open Common.ZPervasives
 
-let step s0 p sN =
-  let code =
-    p |> Prog.path_edges
-      |> List.map Prog.edge_instr
-      |> List.map Prog.instr_str
-      |> String.concat "; "
-  in
-  mkstr "%s { %s } %s"
-    s0 code sN
-
 let ck_paths rwr pp =
   let en =
     pp |> pair_map List.hd
@@ -20,17 +10,15 @@ let ck_paths rwr pp =
     pp |> pair_map Common.last
        |> Rewrite.simrel_entry rwr
   in
-  let l0 = Logic.mk_state "l0" in
-  let lN = Logic.mk_state "lN" in
-  let r0 = Logic.mk_state "r0" in
-  let rN = Logic.mk_state "rN" in
+  let l0, r0 = Logic.start_states in
+  let (lN, lsteps) = Semantics.step_path (fst pp) l0 in
+  let (rN, rsteps) = Semantics.step_path (snd pp) r0 in
+  let assumes =
+    [ en l0 r0 ] @ lsteps @ rsteps
+  in
   let query =
     Logic.imply
-      (Logic.conj
-        [ en l0 r0
-        ; step l0 (fst pp) lN
-        ; step r0 (snd pp) rN
-        ])
+      (Logic.conj assumes)
       (ex lN rN)
   in
   Logic.is_valid query
