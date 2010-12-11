@@ -9,5 +9,7 @@ for(S; E; S) {
 
 +++
 
-nop;
+for(S; E; S) {
+  S;
+}
 

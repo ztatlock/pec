@@ -1,0 +1,57 @@
+orig x
+expr e
+
+---
+
+x = e || e + e;
+x = e && e - e;
+x = e == e * e;
+x = e != e / e;
+
+x = e <  e / e;
+x = e <= e * e;
+x = e >  e - e;
+x = e >= e + e;
+
+x = e + e / e;
+x = e - e * e;
+x = e * e - e;
+x = e / e + e;
+
+x = (e || e) <  e;
+x = (e && e) >  e;
+x = (e == e) <= e;
+x = (e != e) >= e;
+
+x = e || (e <  e);
+x = e && (e >  e);
+x = e == (e <= e);
+x = e != (e >= e);
+
++++
+
+x = e || e + e;
+x = e && e - e;
+x = e == e * e;
+x = e != e / e;
+
+x = e <  e / e;
+x = e <= e * e;
+x = e >  e - e;
+x = e >= e + e;
+
+x = e + e / e;
+x = e - e * e;
+x = e * e - e;
+x = e / e + e;
+
+x = (e || e) <  e;
+x = (e && e) >  e;
+x = (e == e) <= e;
+x = (e != e) >= e;
+
+x = e || (e <  e);
+x = e && (e >  e);
+x = e == (e <= e);
+x = e != (e >= e);
+

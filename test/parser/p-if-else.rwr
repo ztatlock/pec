@@ -1,0 +1,19 @@
+expr E
+stmt S
+
+---
+
+if(E) {
+  S;
+} else {
+  S;
+}
+
++++
+
+if(E) {
+  S;
+} else {
+  S;
+}
+

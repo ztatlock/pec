@@ -5,11 +5,11 @@ stmt S
 
 if(E) {
   S;
-} else {
-  S;
 }
 
 +++
 
-nop;
+if(E) {
+  S;
+}
 

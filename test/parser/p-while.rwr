@@ -3,11 +3,13 @@ stmt S
 
 ---
 
-if(E) {
+while(E) {
   S;
 }
 
 +++
 
-nop;
+while(E) {
+  S;
+}
 

@@ -2,16 +2,29 @@
 
 source $BOUNCER/script/common
 
-function tester {
-  checkParser $1 > $BOUNCER/output/test-parser-$2 2>&1 
+TEST="$BOUNCER/test/parser/*.rwr"
+OUTP="$BOUNCER/output/test-parser"
+
+function run {
+  checkParser $1 > $OUTP-$2 2>&1
 }
 
-for t in $BOUNCER/test/parser/*.rwr; do
-  n=$(basename $t .rwr)
-  if tester $t $n; then
-    printf "%-12s : %s\n" $n $PASS
+function check {
+  expect=$(echo $2 | sed 's/^\(.\).*/\1/')
+  if run $1 $2; then
+    [ "$expect" = "p" ]
   else
-    printf "%-12s : %s\n" $n $FAIL
+    [ "$expect" = "n" ]
+  fi
+}
+
+for t in $TEST; do
+  nm=$(basename $t .rwr)
+  printf "%-20s " $nm
+  if check $t $nm; then
+    echo $PASS
+  else
+    echo $FAIL
   fi
 done
 

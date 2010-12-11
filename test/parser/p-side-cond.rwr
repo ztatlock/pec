@@ -1,0 +1,18 @@
+orig V
+expr E
+stmt S
+
+---
+
+S where noread(V);
+S where nowrite(V);
+S where noaffect(E);
+S where commutes(S);
+
++++
+
+S where noread(V);
+S where nowrite(V);
+S where noaffect(E);
+S where commutes(S);
+

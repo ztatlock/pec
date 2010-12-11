@@ -5,19 +5,25 @@ stmt S
 ---
 
 nop;
+
 I = E;
+
 S;
+
 if(E) {
   S;
 }
+
 if(E) {
   S;
 } else {
   S;
 }
+
 while(E) {
   S;
 }
+
 for(S; E; S) {
   S;
 }
@@ -25,4 +31,26 @@ for(S; E; S) {
 +++
 
 nop;
+
+I = E;
+
+S;
+
+if(E) {
+  S;
+}
+
+if(E) {
+  S;
+} else {
+  S;
+}
+
+while(E) {
+  S;
+}
+
+for(S; E; S) {
+  S;
+}
 
