@@ -3,7 +3,7 @@
 source $BOUNCER/script/common
 
 TEST="$BOUNCER/test/parser/*.rwr"
-OUTP="$BOUNCER/output/test-parser"
+OUTP="$BOUNCER/output/parser"
 
 function run {
   ckparse $1 > $OUTP-$2 2>&1
