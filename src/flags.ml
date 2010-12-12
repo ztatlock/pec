@@ -2,10 +2,10 @@
 let flags : (string * string) list ref =
   ref []
 
-let set_flag f v =
+let set f v =
   flags := (f, v) :: !flags
 
-let get_flag f =
+let get f =
   try
     List.assoc f !flags
   with Not_found ->

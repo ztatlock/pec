@@ -81,7 +81,28 @@ let rec form_str = function
 
 (* dispatch atp query *)
 
+(* TODO : tighten this interface        *)
+(*   use fresh I/O files for each query *)
+(*   check process result               *)
+let z3 q =
+  let f0, f1 =
+    "/tmp/z3-input",
+    "/tmp/z3-output"
+  in
+  Common.str_file f0 q;
+  (* run z3 on input f0 and send output to f1 *)
+  mkstr "z3 -s %s > %s" f0 f1
+    |> Unix.system
+    |> ignore;
+  (* check result *)
+  Common.readlines f1 = [ "1: Valid." ]
+
 let is_valid f =
-  print "\n\n%s\n\nvalid : " (form_str f);
-  read_line () = "y"
+  if Flags.get "interactive" = "" then begin
+    z3 (form_str f)
+  end else begin
+    print "\n\n%s\n\n" (form_str f);
+    print "valid? ";
+    read_line () = "y"
+  end
 

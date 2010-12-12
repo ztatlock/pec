@@ -19,9 +19,9 @@ let parse_args () =
       | "-h" | "--help" ->
           usage ()
       | "-i" | "--interactive" ->
-          Flags.set_flag "interactive" "true"
+          Flags.set "interactive" "true"
       | _ as a ->
-          Flags.set_flag "input" a
+          Flags.set "input" a
       end;
       loop (i + 1)
     end
@@ -32,7 +32,7 @@ let main () =
   parse_args ();
   if
    "input"
-      |> Flags.get_flag
+      |> Flags.get
       |> Rewrite.parse
       |> Synch.infer
       |> SimRel.infer
