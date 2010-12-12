@@ -1,0 +1,18 @@
+orig x
+orig y
+expr e
+stmt s
+
+---
+
+x = e;
+   # invalid without these side conditions
+S; # where nowrite(x), noaffect(e);
+y = e;
+
++++
+
+x = e;
+S;
+y = x;
+
