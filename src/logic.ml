@@ -18,6 +18,7 @@ type form =
   | Neq   of term * term
   | Conj  of form list
   | Imply of form * form
+  | Pred  of string * term list
 
 type state_pred =
   state -> state -> form
@@ -33,6 +34,7 @@ let eq a b      = Eq (a, b)
 let neq a b     = Neq (a, b)
 let conj fs     = Conj fs
 let imply a b   = Imply (a, b) 
+let pred p args = Pred (p, args)
 
 let start_states =
   (L 0, R 0)
@@ -87,6 +89,10 @@ let rec form_str = function
       mkstr "(IMPLIES\n\n%s\n\n%s\n\n)"
         (form_str a)
         (form_str b)
+  | Pred (p, args) ->
+      args |> List.map term_str
+           |> String.concat " "
+           |> mkstr "(%s %s)" p
 
 (* dispatch atp query *)
 
