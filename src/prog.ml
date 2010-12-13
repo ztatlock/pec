@@ -274,7 +274,11 @@ let ast_cfg a =
     | For (header, body) ->
         add (desugar_for header body) root
   in
-  { enter = add a.root (mknode ()) }
+  (* to support is_enter, make every CFG begin *)
+  (* with a node that has no predecessors      *)
+  let s = Seq (Instr Nop, a.root) in
+  let n = add s (mknode ()) in
+  { enter = n }
 
 (* path utilities *)
 
