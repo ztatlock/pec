@@ -10,18 +10,27 @@ let ck_paths rwr pp =
     pp |> pair_map Common.last
        |> Rewrite.simrel_entry rwr
   in
-  let l0, r0 = Logic.start_states in
-  let (lN, lsteps) = Semantics.step_path (fst pp) l0 in
-  let (rN, rsteps) = Semantics.step_path (snd pp) r0 in
+  let l0, r0 =
+    Logic.start_states
+  in
+  let (lN, lsteps), (rN, rsteps) =
+    Semantics.step_path (fst pp) l0,
+    Semantics.step_path (snd pp) r0
+  in
   let assumes =
-    [ en l0 r0 ] @ lsteps @ rsteps
+    Semantics.path_vars_distinct pp
+    :: en l0 r0
+    :: lsteps
+     @ rsteps
   in
   let query =
     Logic.imply
       (Logic.conj assumes)
       (ex lN rN)
   in
-  Logic.is_valid query
+  Logic.is_valid
+    Semantics.axioms
+    query
 
 let ck_rule rwr =
   List.for_all

@@ -92,3 +92,95 @@ let step_path p s =
     |> List.fold_left step_instr (s, [])
     |> fun (s, lns) -> (s, List.rev lns)
 
+let path_vars_distinct pp =
+  pp |> Prog.path_pair_vars
+     |> List.map pvar
+     |> pred "DISTINCT"
+
+
+(* TODO encode axioms below in the logic, not strings *)
+
+(* step axioms *)
+
+let step_assign_var_eq =
+  [ "(FORALL (state var expr)"
+  ; "  (EQ (lkup (step state (Assign var expr)) var)"
+  ; "      expr))"
+  ]
+
+let step_assign_var_neq =
+  [ "(FORALL (state var1 var2 expr)"
+  ; "  (IMPLIES (NEQ var1 var2)"
+  ; "           (EQ (lkup (step state (Assign var1 expr)) var2)"
+  ; "               (lkup state var2))))"
+  ]
+
+(* binop axioms *)
+
+let ax_lt =
+  [ "(FORALL (expr1 expr2)"
+  ; "  (IMPLIES (NEQ 0 (Lt expr1 expr2))"
+  ; "           (< expr1 expr2)))"
+  ]
+
+let ax_lte =
+  [ "(FORALL (expr1 expr2)"
+  ; "  (IMPLIES (NEQ 0 (Lte expr1 expr2))"
+  ; "           (<= expr1 expr2)))"
+  ]
+
+let ax_gt =
+  [ "(FORALL (expr1 expr2)"
+  ; "  (IMPLIES (NEQ 0 (Gt expr1 expr2))"
+  ; "           (> expr1 expr2)))"
+  ]
+
+let ax_gte =
+  [ "(FORALL (expr1 expr2)"
+  ; "  (IMPLIES (NEQ 0 (Gte expr1 expr2))"
+  ; "           (>= expr1 expr2)))"
+  ]
+
+let ax_not_lt_gte =
+  [ "(FORALL (expr1 expr2)"
+  ; "  (EQ (Not (Lt expr1 expr2))"
+  ; "      (Gte expr1 expr2)))"
+  ]
+
+let ax_not_lte_gt =
+  [ "(FORALL (expr1 expr2)"
+  ; "  (EQ (Not (Lte expr1 expr2))"
+  ; "      (Gt expr1 expr2)))"
+  ]
+
+let ax_not_gt_lte =
+  [ "(FORALL (expr1 expr2)"
+  ; "  (EQ (Not (Gt expr1 expr2))"
+  ; "      (Lte expr1 expr2)))"
+  ]
+
+let ax_not_gte_lt =
+  [ "(FORALL (expr1 expr2)"
+  ; "  (EQ (Not (Gte expr1 expr2))"
+  ; "      (Lt expr1 expr2)))"
+  ]
+
+(* all our assumptions *)
+
+let axioms =
+  [ step_assign_var_eq
+  ; step_assign_var_neq
+  ; ax_lt
+  ; ax_lte
+  ; ax_gt
+  ; ax_gte
+  ; ax_not_lt_gte
+  ; ax_not_lte_gt
+  ; ax_not_gt_lte
+  ; ax_not_gte_lt
+  ]
+  |> List.map (String.concat "\n  ")
+  |> List.map (mkstr "(BG_PUSH\n  %s\n)")
+  |> String.concat "\n\n"
+  |> mkstr ";; begin axioms\n\n%s\n\n;; end axioms\n\n"
+
