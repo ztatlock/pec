@@ -1,30 +1,37 @@
 open Common.ZPervasives
 
 let usage () =
-  "Usage: pec [options] <file>                                      \n" ^
-  "                                                                 \n" ^
-  "Attempt to automatically verify the rewrite rule in <file>.      \n" ^
-  "                                                                 \n" ^
-  "OPTIONS:                                                         \n" ^
-  "  -h, --help                   display this usage information    \n" ^
-  "  -i, --interactive            let user play theorem prover      \n" ^
-  "                                                                 \n"
+  "Usage: pec [options] <file>                                         \n" ^
+  "                                                                    \n" ^
+  "Attempt to automatically verify the rewrite rule in <file>.         \n" ^
+  "                                                                    \n" ^
+  "OPTIONS:                                                            \n" ^
+  "  -h, --help                   display this usage information       \n" ^
+  "  -i, --interactive            let user play theorem prover         \n" ^
+  "  -l, --log                    set log file (default: /tmp/pec-log) \n" ^
+  "                                                                    \n"
   |> print "%s"; exit 1
 
 let parse_args () =
   let n = Array.length Sys.argv in
   let rec loop i =
-    if i < n then begin
-      begin match Sys.argv.(i) with
+    if i < n then
+      match Sys.argv.(i) with
       | "-h" | "--help" ->
           usage ()
       | "-i" | "--interactive" ->
-          Flags.set "interactive" "true"
+          Flags.set "interactive" "true";
+          loop (i + 1)
+      | "-l" | "--log" ->
+          if i + 1 < n then begin
+            Flags.set "log" Sys.argv.(i + 1);
+            loop (i + 2)
+          end else begin
+            usage ()
+          end
       | _ as a ->
-          Flags.set "input" a
-      end;
-      loop (i + 1)
-    end
+          Flags.set "input" a;
+          loop (i + 1)
   in
   loop 1
 
