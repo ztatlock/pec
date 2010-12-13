@@ -107,11 +107,13 @@ let z3 q =
   Common.readlines f1 = [ "1: Valid." ]
 
 let is_valid f =
+  let v = z3 (form_str f) in
   if Flags.get "interactive" = "" then begin
-    z3 (form_str f)
+    v
   end else begin
     print "\n\n%s\n\n" (form_str f);
-    print "valid? ";
-    read_line () = "y"
+    print "z3 says \"%b\".\n" v;
+    print "what do you say? ";
+    read_line () = "true"
   end
 
