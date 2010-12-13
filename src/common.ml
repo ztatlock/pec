@@ -71,3 +71,24 @@ let str_file fn s =
   output_string f s;
   close_out f
 
+(* logging *)
+
+let logbuf : string list ref =
+  ref []
+
+let log msg =
+  logbuf := msg :: !logbuf
+
+let write_log () =
+  !logbuf
+    |> String.concat "\n"
+    |> str_file (Flags.get "log")
+
+(* set default log file *)
+let _ =
+  Flags.set "log" "/tmp/pec-log"
+
+(* always write log to disk at program exit *)
+let _ =
+  at_exit write_log
+
