@@ -12,6 +12,8 @@ type term =
   | Func  of string * term list
 
 type form =
+  | True
+  | False
   | Eq    of term * term
   | Neq   of term * term
   | Conj  of form list
@@ -43,6 +45,9 @@ let state_eq s1 s2 =
   (eq (state s1)
       (state s2))
 
+let state_false s1 s2 =
+  False
+
 (* string reprs *)
 
 let state_str = function
@@ -62,6 +67,10 @@ let rec term_str = function
            |> mkstr "(%s %s)" f
 
 let rec form_str = function
+  | True ->
+      "TRUE"
+  | False ->
+      "FALSE"
   | Eq (a, b) ->
       mkstr "(EQ %s %s)"
         (term_str a)
