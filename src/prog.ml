@@ -192,6 +192,82 @@ and for_header_str h =
 let ast_str a =
   stmt_str a.root
 
+let edge_str e =
+  mkstr "%d %s %d"
+    e.src.nid
+    (instr_str e.instr)
+    e.snk.nid
+
+(* pretty string reprs *)
+
+let var_pretty = function
+  | Orig v -> v
+  | Temp v -> v
+
+let unop_pretty = function
+  | Not -> "!"
+
+let binop_pretty = function
+  | Or  -> "||"
+  | And -> "&&"
+  | Eq  -> "=="
+  | Neq -> "!="
+  | Lt  -> "<"
+  | Lte -> "<="
+  | Gt  -> ">"
+  | Gte -> ">="
+  | Add -> "+"
+  | Sub -> "-"
+  | Mul -> "*"
+  | Div -> "/"
+
+let rec expr_pretty = function
+  | IntLit i ->
+      mkstr "%d" i
+  | BoolLit b ->
+      mkstr "%b" b
+  | Var v ->
+      var_pretty v
+  | Unop (op, e) ->
+      mkstr "%s%s"
+        (unop_pretty op)
+        (expr_pretty e)
+  | Binop (op, l, r) ->
+      mkstr "(%s %s %s)"
+        (expr_pretty l)
+        (binop_pretty op)
+        (expr_pretty r)
+  | ExprParam id ->
+      id
+
+let rec instr_pretty = function
+  | Nop ->
+      "nop"
+  | Assign (v, e) ->
+      mkstr "%s = %s"
+        (var_pretty v)
+        (expr_pretty e)
+  | Assume e ->
+      expr_pretty e
+  | StmtParam (id, scs) ->
+      scs |> List.map side_cond_pretty
+          |> String.concat ", "
+          |> fun s ->
+               if s <> "" then
+                 mkstr "%s where %s" id s
+               else
+                 id
+
+and side_cond_pretty = function
+  | NoRead v ->
+      mkstr "noread(%s)" (var_pretty v)
+  | NoWrite v ->
+      mkstr "nowrite(%s)" (var_pretty v)
+  | NoAffect e ->
+      mkstr "noaffect(%s)" (expr_pretty e)
+  | Commutes i ->
+      mkstr "commutes(%s)" (instr_pretty i)
+
 (* AST utilities *)
 
 let assume c =
@@ -291,6 +367,23 @@ let path_edges p =
   let srcs = Common.drop_last p in
   let snks = List.tl p in
   List.map2 fromto srcs snks
+
+let path_edge_str e =
+  mkstr "  %d\n    %s"
+    e.src.nid
+    (instr_pretty e.instr)
+
+let path_str p =
+  p |> path_edges
+    |> List.map path_edge_str
+    |> String.concat "\n"
+    |> fun s ->
+         mkstr "%s\n  %d" s (Common.last p).nid
+
+let path_pair_str (l, r) =
+  mkstr "left:\n%s\n\nright:\n%s\n"
+    (path_str l)
+    (path_str r)
 
 let edge_instr e =
   e.instr
