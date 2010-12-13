@@ -311,6 +311,12 @@ let succs n =
     (fun e -> e.snk)
     n.out_edges
 
+let is_entry n =
+  n.in_edges = []
+
+let is_exit n =
+  n.out_edges = []
+
 let nid n =
   n.nid
 

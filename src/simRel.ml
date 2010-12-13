@@ -14,8 +14,26 @@ let synch_points paths =
   in
   Common.uniq (ens @ exs)
 
+let entry (l, r) =
+  Prog.is_entry l &&
+  Prog.is_entry r
+
+let exit (l, r) =
+  Prog.is_exit l &&
+  Prog.is_exit r
+
+let invalid (l, r) =
+  Prog.is_exit l <> Prog.is_exit r
+
 let guess_invariant np =
-  Logic.state_eq
+  if entry np then
+    Logic.state_eq
+  else if exit np then
+    Logic.state_eq
+  else if invalid np then
+    Logic.state_false
+  else
+    Logic.state_eq
 
 let guess_entry np =
   (np, guess_invariant np)
