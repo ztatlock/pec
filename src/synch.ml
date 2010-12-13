@@ -4,7 +4,7 @@ open Common.ZPervasives
 
 (* track pairs of nodes already searched *)
 
-let marks =
+let marks : (int * int) list ref =
   ref []
 
 let reset_marks () =
@@ -20,7 +20,7 @@ let marked np =
 
 (* remember paths found *)
 
-let paths =
+let paths : (Prog.path * Prog.path) list ref  =
   ref []
 
 let reset_paths () =
@@ -32,36 +32,26 @@ let add_paths l r =
 let get_paths () =
   List.rev !paths
 
+let log_paths () =
+  () |> get_paths
+     |> List.map Prog.path_pair_str
+     |> String.concat "\n:::\n\n"
+     |> mkstr "Synchronized Path Programs:\n\n%s"
+     |> Common.log
+
 (* boring: what we lump between synch points *)
 (* ie things that are not worth stopping for *)
 
-let rec is_boring_expr = function
-  | Prog.IntLit _
-  | Prog.BoolLit _
-  | Prog.Var _ ->
-      true
-  | Prog.Unop (_, e) ->
-      is_boring_expr e
-  | Prog.Binop (_, l, r) ->
-      is_boring_expr l &&
-      is_boring_expr r
-  | Prog.ExprParam _ ->
-      false
+let boring_instr = function
+  | Prog.StmtParam _ -> false
+  | _ -> true
 
-let is_boring_instr = function
-  | Prog.Nop ->
-      true
-  | Prog.Assign (_, e)
-  | Prog.Assume e ->
-      is_boring_expr e
-  | Prog.StmtParam _ ->
-      false
-
-let is_boring n =
+let boring n =
+  n.Prog.in_edges  <> [] &&
   n.Prog.out_edges <> [] &&
   n.Prog.out_edges
-    |> List.map (fun e -> e.Prog.instr)
-    |> List.for_all is_boring_instr
+    |> List.map Prog.edge_instr
+    |> List.for_all boring_instr
 
 (* infer synchronized path programs           *)
 (* NOTE: left and right paths are reversed    *)
@@ -82,11 +72,11 @@ and walk pl pr =
     ()
   else begin
     mark (l, r);
-    if is_boring l then
+    if boring l then
       List.iter
         (fun sl -> walk (sl :: pl) pr)
         (Prog.succs l)
-    else if is_boring r then
+    else if boring r then
       List.iter
         (fun sr -> walk pl (sr :: pr))
         (Prog.succs r)
@@ -96,13 +86,20 @@ and walk pl pr =
     end
   end
 
-let infer rwr =
+let infer_paths rwr =
+  (* initialize state *)
   reset_marks ();
   reset_paths ();
   let enl, enr =
     rwr.Rewrite.cfgl.Prog.enter,
     rwr.Rewrite.cfgr.Prog.enter
   in
+  (* run the inference *)
   start enl enr;
-  Rewrite.set_paths rwr (get_paths ())
+  log_paths ();
+  get_paths ()
+
+let infer rwr =
+  rwr |> infer_paths
+      |> Rewrite.set_paths rwr
 
