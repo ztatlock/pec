@@ -282,7 +282,35 @@ let desugar_for h b =
               , Seq ( b
                     , h.update)))
 
+let rec expr_vars = function
+  | IntLit _ ->
+      []
+  | BoolLit _ ->
+      []
+  | Var v ->
+      [v]
+  | Unop (_, e) ->
+      expr_vars e
+  | Binop (_, l, r) ->
+      expr_vars l @
+      expr_vars r
+  | ExprParam _ ->
+      []
+
+let instr_vars = function
+  | Nop ->
+      []
+  | Assign (v, e) ->
+      v :: (expr_vars e)
+  | Assume e ->
+      expr_vars e
+  | StmtParam _ ->
+      []
+
 (* CFG utilities *)
+
+let edge_instr e =
+  e.instr
 
 let mknode () =
   { nid = tock ()
@@ -374,6 +402,17 @@ let path_edges p =
   let snks = List.tl p in
   List.map2 fromto srcs snks
 
+let path_vars p =
+  p |> path_edges
+    |> List.map edge_instr
+    |> List.map instr_vars
+    |> List.flatten
+    |> Common.uniq
+
+let path_pair_vars (l, r) =
+  Common.uniq
+    (path_vars l @ path_vars r)
+
 let path_edge_str e =
   mkstr "  %d\n    %s"
     e.src.nid
@@ -390,9 +429,6 @@ let path_pair_str (l, r) =
   mkstr "left:\n%s\n\nright:\n%s\n"
     (path_str l)
     (path_str r)
-
-let edge_instr e =
-  e.instr
 
 (* line tracking for rewrite lexer and parser *)
 
