@@ -92,11 +92,14 @@ let step_path p s =
     |> List.fold_left step_instr (s, [])
     |> fun (s, lns) -> (s, List.rev lns)
 
-let path_vars_distinct pp =
-  pp |> Prog.path_pair_vars
-     |> List.map pvar
-     |> pred "DISTINCT"
-
+let vars_distinct (l, r) =
+  let vl, vr =
+    Prog.path_vars l,
+    Prog.path_vars r
+  in
+  (vl @ vr) |> Common.uniq
+            |> List.map pvar
+            |> pred "DISTINCT"
 
 (* TODO encode axioms below in the logic, not strings *)
 
@@ -116,6 +119,30 @@ let step_assign_var_neq =
   ]
 
 (* binop axioms *)
+
+let ax_add =
+  [ "(FORALL (expr1 expr2)"
+  ; "  (EQ (Add expr1 expr2)"
+  ; "      (+ expr1 expr2)))"
+  ]
+
+let ax_sub =
+  [ "(FORALL (expr1 expr2)"
+  ; "  (EQ (Sub expr1 expr2)"
+  ; "      (- expr1 expr2)))"
+  ]
+
+let ax_mul =
+  [ "(FORALL (expr1 expr2)"
+  ; "  (EQ (Mul expr1 expr2)"
+  ; "      (* expr1 expr2)))"
+  ]
+
+let ax_div =
+  [ "(FORALL (expr1 expr2)"
+  ; "  (EQ (Div expr1 expr2)"
+  ; "      (/ expr1 expr2)))"
+  ]
 
 let ax_lt =
   [ "(FORALL (expr1 expr2)"
@@ -170,6 +197,10 @@ let ax_not_gte_lt =
 let axioms =
   [ step_assign_var_eq
   ; step_assign_var_neq
+  ; ax_add
+  ; ax_sub
+  ; ax_mul
+  ; ax_div
   ; ax_lt
   ; ax_lte
   ; ax_gt
