@@ -41,8 +41,11 @@ let main () =
    "input"
       |> Flags.get
       |> Rewrite.parse
+      |> ff Rewrite.log_cfgs
       |> Synch.infer
+      |> ff Rewrite.log_paths
       |> SimRel.infer
+      |> ff Rewrite.log_simrel
       |> Check.check
   then
     print "VALID\n"

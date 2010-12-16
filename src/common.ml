@@ -49,6 +49,8 @@ let xprod ls rs =
   ls |> List.map (fun l -> pair_up l rs)
      |> List.flatten
 
+(* I/O *)
+
 let readlines file =
   let f = open_in file in
   let rec loop ls =
@@ -81,7 +83,8 @@ let log msg =
 
 let write_log () =
   !logbuf
-    |> String.concat "\n"
+    |> List.rev
+    |> String.concat "\n\n"
     |> str_file (Flags.get "log")
 
 (* set default log file *)

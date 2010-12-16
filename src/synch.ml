@@ -32,13 +32,6 @@ let add_paths l r =
 let get_paths () =
   List.rev !paths
 
-let log_paths () =
-  () |> get_paths
-     |> List.map Prog.path_pair_str
-     |> String.concat "\n:::\n\n"
-     |> mkstr "Synchronized Path Programs:\n\n%s"
-     |> Common.log
-
 (* boring: what we lump between synch points *)
 (* ie things that are not worth stopping for *)
 
@@ -96,7 +89,6 @@ let infer_paths rwr =
   in
   (* run the inference *)
   start enl enr;
-  log_paths ();
   get_paths ()
 
 let infer rwr =

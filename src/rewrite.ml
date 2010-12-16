@@ -7,10 +7,10 @@ open Common.ZPervasives
  *)
 
 type rewrite =
-  { cfgl   : Prog.cfg
-  ; cfgr   : Prog.cfg
-  ; paths  : (Prog.path * Prog.path) list
-  ; simrel : Logic.simrel 
+  { cfgl  : Prog.cfg
+  ; cfgr  : Prog.cfg
+  ; paths : (Prog.path * Prog.path) list
+  ; mutable simrel : Logic.simrel
   }
 
 let mk_rewrite (l, r) =
@@ -25,6 +25,40 @@ let set_paths rwr ps =
 
 let set_simrel rwr sr =
   { rwr with simrel = sr }
+
+let update_simrel rwr np sp =
+  rwr.simrel <- (np, sp) :: rwr.simrel
+
+(* logging *)
+
+let log_cfgs rwr =
+  Common.log ">>> CFG Dot Reprs";
+  rwr.cfgl
+    |> Prog.cfg_dot ~nm:"left"
+    |> Common.log;
+  rwr.cfgr
+    |> Prog.cfg_dot ~nm:"right"
+    |> Common.log
+
+let log_paths rwr =
+  Common.log ">>> Synched Path Progs";
+  rwr.paths
+    |> List.map Prog.path_pair_str
+    |> String.concat "\n:::\n\n"
+    |> Common.log
+
+let simrel_entry_str ((l, r), f) =
+  mkstr "  %2d %2d : %s"
+    l.Prog.nid r.Prog.nid (Logic.form_simp f)
+
+let log_simrel rwr =
+  Common.log ">>> Init Simrel";
+  rwr.simrel
+    |> List.map simrel_entry_str
+    |> String.concat "\n"
+    |> Common.log
+
+(* utilities *)
 
 let simrel_entry rwr np =
   try
