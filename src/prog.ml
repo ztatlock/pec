@@ -472,11 +472,6 @@ let path_str p =
     |> fun s ->
          mkstr "%s\n  %2d" s (Common.last p).nid
 
-let path_pair_str (l, r) =
-  mkstr "left:\n%s\n\nright:\n%s\n"
-    (path_str l)
-    (path_str r)
-
 (* line tracking for rewrite lexer and parser *)
 
 let line =

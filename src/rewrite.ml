@@ -40,11 +40,18 @@ let log_cfgs rwr =
     |> Prog.cfg_dot ~nm:"right"
     |> Common.log
 
+let path_pair_str (l, r) =
+  let sl, sr =
+    Prog.path_str l,
+    Prog.path_str r
+  in
+  Common.side_by_side sl sr
+
 let log_paths rwr =
   Common.log ">>> Synched Path Progs";
   rwr.paths
-    |> List.map Prog.path_pair_str
-    |> String.concat "\n:::\n\n"
+    |> List.map path_pair_str
+    |> String.concat "\n\n"
     |> Common.log
 
 let simrel_entry_str ((l, r), f) =

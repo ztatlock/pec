@@ -49,6 +49,36 @@ let xprod ls rs =
   ls |> List.map (fun l -> pair_up l rs)
      |> List.flatten
 
+let split re =
+  Str.split (Str.regexp re)
+
+let rec pad v n l =
+  if List.length l < n then
+    pad v n (l @ [v])
+  else
+    l
+
+let side_by_side sl sr =
+  let lnsl, lnsr =
+    split "\n" sl,
+    split "\n" sr
+  in
+  let n =
+    max (List.length lnsl)
+        (List.length lnsr)
+  in
+  let lnsl, lnsr =
+    pad "" n lnsl,
+    pad "" n lnsr
+  in
+  let lns =
+    List.map2
+      (mkstr "%-35s%s")
+      lnsl
+      lnsr
+  in
+  String.concat "\n" lns
+
 (* I/O *)
 
 let readlines file =

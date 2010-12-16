@@ -2,7 +2,7 @@ BUILD = ocamlbuild
 SLINK = ln --symbolic --force
 
 FLAGS = \
-	-lib unix \
+	-libs unix,str \
 	-cflag -g \
 	-lflag -g \
 	-build-dir ../bin \

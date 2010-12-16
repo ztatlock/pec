@@ -32,7 +32,7 @@ let strengthen rwr pp f =
 
 let log pp obl =
   Common.log ">>> Checking Path Pair";
-  Common.log (Prog.path_pair_str pp);
+  Common.log (Rewrite.path_pair_str pp);
   Common.log (Logic.form_simp obl)
 
 let ck_paths rwr pp =
