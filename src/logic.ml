@@ -20,11 +20,8 @@ type form =
   | Imply of form * form
   | Pred  of string * term list
 
-type state_pred =
-  state -> state -> form
-
 type simrel =
-  ((Prog.node * Prog.node) * state_pred) list
+  ((Prog.node * Prog.node) * form) list
 
 (* curried constructors *)
 let var v       = Var v
@@ -36,63 +33,107 @@ let conj fs     = Conj fs
 let imply a b   = Imply (a, b) 
 let pred p args = Pred (p, args)
 
-let start_states =
-  (L 0, R 0)
+let start_l =
+  L 0
+
+let start_r =
+  R 0
 
 let next_state = function
-  | L i -> L (i + 1)
-  | R i -> R (i + 1)
+  | L _ -> L (tock ())
+  | R _ -> R (tock ())
 
-let state_eq s1 s2 =
-  (eq (state s1)
-      (state s2))
+let state_eq =
+  eq (state start_l)
+     (state start_r)
 
-let state_false s1 s2 =
-  False
+(* simplify repr, essentially sexprs *)
 
-(* string reprs *)
+let state_simp = function
+  | L i -> mkstr "l%d" i
+  | R i -> mkstr "r%d" i
 
-let state_str = function
-  | L i -> mkstr "l%02d" i
-  | R i -> mkstr "r%02d" i
-
-let rec term_str = function
+let rec term_simp = function
   | Int i ->
       mkstr "%d" i
   | Var v ->
       v
   | State s ->
-      state_str s
+      state_simp s
   | Func (f, args) ->
-      args |> List.map term_str
+      args |> List.map term_simp
            |> String.concat " "
            |> mkstr "(%s %s)" f
 
-let rec form_str = function
+let rec form_simp = function
   | True ->
       "TRUE"
   | False ->
       "FALSE"
   | Eq (a, b) ->
       mkstr "(EQ %s %s)"
-        (term_str a)
-        (term_str b)
+        (term_simp a)
+        (term_simp b)
   | Neq (a, b) ->
       mkstr "(NEQ %s %s)"
-        (term_str a)
-        (term_str b)
+        (term_simp a)
+        (term_simp b)
   | Conj fs ->
-      fs |> List.map form_str
+      fs |> List.map form_simp
          |> String.concat "\n\n"
          |> mkstr "(AND\n\n%s\n\n)"
   | Imply (a, b) ->
       mkstr "(IMPLIES\n\n%s\n\n%s\n\n)"
-        (form_str a)
-        (form_str b)
+        (form_simp a)
+        (form_simp b)
   | Pred (p, args) ->
-      args |> List.map term_str
+      args |> List.map term_simp
            |> String.concat " "
            |> mkstr "(%s %s)" p
+
+(* term replacement *)
+
+let rec replace_term t1 t2 x =
+  if x = t1 then
+    t2
+  else
+    match x with
+    | Int _
+    | Var _
+    | State _ ->
+        x
+    | Func (f, args) ->
+        args |> List.map (replace_term t1 t2)
+             |> func f
+
+let rec replace t1 t2 = function
+  | True ->
+      True
+  | False ->
+      False
+  | Eq (a, b) ->
+      eq (replace_term t1 t2 a)
+         (replace_term t1 t2 b)
+  | Neq (a, b) ->
+      neq (replace_term t1 t2 a)
+          (replace_term t1 t2 b)
+  | Conj fs ->
+      fs |> List.map (replace t1 t2)
+         |> conj
+  | Imply (a, b) ->
+      imply (replace t1 t2 a)
+            (replace t1 t2 b)
+  | Pred (p, args) ->
+      args |> List.map (replace_term t1 t2)
+           |> pred p
+
+let replace_start_l lN =
+  replace (state start_l)
+          (state lN)
+
+let replace_start_r rN =
+  replace (state start_r)
+          (state rN)
 
 (* dispatch atp query *)
 
@@ -112,12 +153,12 @@ let z3 axioms query =
   (* check result *)
   Common.readlines f1 = [ "1: Valid." ]
 
-let is_valid axioms form =
-  let v = z3 axioms (form_str form) in
+let valid axioms form =
+  let v = z3 axioms (form_simp form) in
   if Flags.get "interactive" = "" then begin
     v
   end else begin
-    print "\n\n%s\n\n" (form_str form);
+    print "\n\n%s\n\n" (form_simp form);
     print "z3 says \"%b\".\n" v;
     print "what do you say? ";
     read_line () = "true"

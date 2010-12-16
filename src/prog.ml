@@ -40,6 +40,14 @@ type expr =
   | Unop      of unop * expr
   | Binop     of binop * expr * expr
   | ExprParam of id
+  (* TODO : add side conds for exprs
+   *
+   * e.g. "e noread(x)"
+   *
+   * (FORALL (val)
+   *   (EQ (eval l0 e)
+   *       (eval (step l0 (Assign (Orig x) val)) e)))
+   *)
 
 type instr =
   | Nop
@@ -243,6 +251,9 @@ let rec expr_pretty = function
 let rec instr_pretty = function
   | Nop ->
       "nop"
+  | Assign (v1, (Binop (Add, Var v2, IntLit 1))) when v1 = v2 ->
+      mkstr "%s++"
+        (var_pretty v1)
   | Assign (v, e) ->
       mkstr "%s = %s"
         (var_pretty v)
@@ -308,6 +319,32 @@ let instr_vars = function
       []
 
 (* CFG utilities *)
+
+let cfg_edges g =
+  let marks = ref [] in
+  let edges = ref [] in
+  let marked n =
+    List.mem n.nid !marks
+  in
+  let mark n =
+    marks := n.nid :: !marks
+  in
+  let add_edge e =
+    edges := e :: !edges
+  in
+  let rec add n =
+    if marked n then
+      ()
+    else begin
+      mark n;
+      n.out_edges
+        |> ff (List.iter add_edge)
+        |> List.map (fun e -> e.snk)
+        |> List.iter add
+    end
+  in
+  add g.enter;
+  List.rev !edges
 
 let edge_instr e =
   e.instr
@@ -384,11 +421,25 @@ let ast_cfg a =
     | For (header, body) ->
         add (desugar_for header body) root
   in
-  (* to support is_enter, make every CFG begin *)
+  (* to support is_entry, make every CFG begin *)
   (* with a node that has no predecessors      *)
   let s = Seq (Instr Nop, a.root) in
   let n = add s (mknode ()) in
   { enter = n }
+
+(* cfg dot repr *)
+
+let edge_dot e =
+  mkstr "  %2d -> %2d [label=\"%s\"];"
+    e.src.nid
+    e.snk.nid
+    (instr_pretty e.instr)
+
+let cfg_dot ?(nm = "") g =
+  g |> cfg_edges
+    |> List.map edge_dot
+    |> String.concat "\n"
+    |> mkstr "digraph %s {\n%s\n}" nm
 
 (* path utilities *)
 
@@ -409,12 +460,8 @@ let path_vars p =
     |> List.flatten
     |> Common.uniq
 
-let path_pair_vars (l, r) =
-  Common.uniq
-    (path_vars l @ path_vars r)
-
 let path_edge_str e =
-  mkstr "  %d\n    %s"
+  mkstr "  %2d %s"
     e.src.nid
     (instr_pretty e.instr)
 
@@ -423,7 +470,7 @@ let path_str p =
     |> List.map path_edge_str
     |> String.concat "\n"
     |> fun s ->
-         mkstr "%s\n  %d" s (Common.last p).nid
+         mkstr "%s\n  %2d" s (Common.last p).nid
 
 let path_pair_str (l, r) =
   mkstr "left:\n%s\n\nright:\n%s\n"

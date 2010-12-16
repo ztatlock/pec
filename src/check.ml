@@ -1,36 +1,51 @@
 
 open Common.ZPervasives
 
-let ck_paths rwr pp =
-  let en =
-    pp |> pair_map List.hd
-       |> Rewrite.simrel_entry rwr
+let obligation rwr pp =
+  let en, ex =
+    pair_map List.hd     pp,
+    pair_map Common.last pp
   in
-  let ex =
-    pp |> pair_map Common.last
-       |> Rewrite.simrel_entry rwr
-  in
-  let l0, r0 =
-    Logic.start_states
+  let top, bot =
+    Rewrite.simrel_entry rwr en,
+    Rewrite.simrel_entry rwr ex
   in
   let (lN, lsteps), (rN, rsteps) =
-    Semantics.step_path (fst pp) l0,
-    Semantics.step_path (snd pp) r0
+    Semantics.step_path (fst pp) Logic.start_l,
+    Semantics.step_path (snd pp) Logic.start_r
   in
-  let assumes =
-    Semantics.path_vars_distinct pp
-    :: en l0 r0
-    :: lsteps
-     @ rsteps
+  let hyps =
+    top :: Semantics.vars_distinct pp
+        :: lsteps @ rsteps
   in
-  let query =
-    Logic.imply
-      (Logic.conj assumes)
-      (ex lN rN)
+  let bot =
+    bot |> Logic.replace_start_l lN
+        |> Logic.replace_start_r rN
   in
-  Logic.is_valid
-    Semantics.axioms
-    query
+  Logic.imply (Logic.conj hyps) bot
+
+let strengthen rwr pp f =
+  let en = pair_map List.hd pp in
+  if not (SimRel.entry en) then begin
+    Rewrite.update_simrel rwr en f
+  end
+
+let log pp obl =
+  Common.log ">>> Checking Path Pair";
+  Common.log (Prog.path_pair_str pp);
+  Common.log (Logic.form_simp obl)
+
+let ck_paths rwr pp =
+  let obl = obligation rwr pp in
+  log pp obl;
+  if Logic.valid Semantics.axioms obl then begin
+    Common.log "Passed.";
+    true
+  end else begin
+    Common.log "Failed.";
+    strengthen rwr pp obl;
+    false
+  end
 
 let ck_rule rwr =
   List.for_all
@@ -38,5 +53,6 @@ let ck_rule rwr =
     rwr.Rewrite.paths
 
 let check rwr =
-  ck_rule rwr
+     ck_rule rwr
+  || ck_rule rwr
 

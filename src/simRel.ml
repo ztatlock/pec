@@ -23,7 +23,29 @@ let exit (l, r) =
   Prog.is_exit r
 
 let invalid (l, r) =
-  Prog.is_exit l <> Prog.is_exit r
+  Prog.is_entry l <> Prog.is_entry r ||
+  Prog.is_exit  l <> Prog.is_exit  r
+
+let recent_assume s n =
+  let ins =
+    List.map
+      Prog.edge_instr
+      n.Prog.in_edges
+  in
+  match ins with
+  | [Prog.Assume c] ->
+      Logic.neq
+        (Logic.Int 0)
+        (Semantics.eval_expr s c)
+  | _ ->
+      Logic.True
+
+let recent_assumes (l, r) =
+  Logic.conj
+    [ Logic.state_eq
+    ; recent_assume Logic.start_l l
+    ; recent_assume Logic.start_r r
+    ]
 
 let guess_invariant np =
   if entry np then
@@ -31,9 +53,9 @@ let guess_invariant np =
   else if exit np then
     Logic.state_eq
   else if invalid np then
-    Logic.state_false
+    Logic.False
   else
-    Logic.state_eq
+    recent_assumes np
 
 let guess_entry np =
   (np, guess_invariant np)
