@@ -6,7 +6,7 @@ stmt S
 
 assume(N > 0);
 for(I = 0; I < N; I++) {
-  S;
+  S where nowrite(I), nowrite(N);
 }
 
 +++

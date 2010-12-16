@@ -6,7 +6,8 @@ stmt S
 
 assume(N > 0);
 for(I = 0; I < N; I++) {
-  S where nowrite(I), nowrite(N);
+     # omit critical side conditons
+  S; # where nowrite(I), nowrite(N);
 }
 
 +++
@@ -16,6 +17,5 @@ for(I = 0; I < N - 1; I++) {
 }
 
 S;
-# forget final incr
-# I++;
+I++;
 
