@@ -1,12 +1,15 @@
 orig V
+orig W
 expr E
 stmt S
 
 ---
 
-S where noread(V), nowrite(V), noaffect(E), commutes(S);
+V = E where noread(V), noread(W);
+S where nowrite(V), noaffect(E);
 
 +++
 
-S where noread(V), nowrite(V), noaffect(E), commutes(S);
+V = E where noread(V), noread(W);
+S where nowrite(V), noaffect(E);
 

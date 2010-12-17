@@ -5,7 +5,7 @@ stmt s
 
 ---
 
-x = e;
+x = e where noread(x);
 S where nowrite(x), noaffect(e);
 y = e;
 

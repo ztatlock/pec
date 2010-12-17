@@ -4,15 +4,13 @@ stmt S
 
 ---
 
-S where noread(V);
+V = E where noread(V);
 S where nowrite(V);
 S where noaffect(E);
-S where commutes(S);
 
 +++
 
-S where noread(V);
+V = E where noread(V);
 S where nowrite(V);
 S where noaffect(E);
-S where commutes(S);
 
