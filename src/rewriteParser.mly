@@ -31,32 +31,22 @@ let parse_error s =
 %token REPLACE
 
 %token NOT
-%token OR
-%token AND
-%token EQ
-%token NEQ
-%token LT
-%token LTE
-%token GT
-%token GTE
-%token ADD
-%token SUB
-%token MUL
-%token DIV
+%token OR  AND EQ  NEQ
+%token LT  LTE GT  GTE
+%token ADD SUB MUL DIV
 
-%token <int>  INTLIT
-%token <bool> BOOLLIT
+%token <int> INTLIT
+%token TRUE
+%token FALSE
 
 %token NOP
 %token ASSIGN
 %token ASSUME
 %token WHERE
 
-%token           PURE
 %token <Prog.id> NOREAD
 %token <Prog.id> NOWRITE
 %token <Prog.id> NOAFFECT
-%token <Prog.id> COMMUTES
 
 %token SEMI
 %token IF
@@ -93,10 +83,7 @@ let parse_error s =
 
 rewrite:
   | decls FIND stmt REPLACE stmt EOF
-      { let l = { root = $3 } in
-        let r = { root = $5 } in
-        (l, r)
-      }
+      { (mkast $3, mkast $5) }
 
 decls:
   |            { }
@@ -147,9 +134,9 @@ instr:
   | ASSUME LPAREN expr RPAREN
       { Assume $3 }
   | ID
-      { StmtParam ($1, []) }
-  | ID WHERE side_conds
-      { StmtParam ($1, $3) }
+      { Code (CP ($1, [])) }
+  | ID WHERE code_side_conds
+      { Code (CP ($1, $3)) }
 
 var:
   | ID
@@ -163,8 +150,10 @@ var:
 expr:
   | INTLIT
       { IntLit $1 }
-  | BOOLLIT
-      { BoolLit $1 }
+  | TRUE
+      { IntLit 1 }
+  | FALSE
+      { IntLit 0 }
   | NOT expr
       { Unop (Not, $2) }
   | binop
@@ -173,9 +162,15 @@ expr:
       { match lkup_decl $1 with
         | OrigDecl -> Var (Orig $1)
         | TempDecl -> Var (Temp $1)
-        | ExprDecl -> ExprParam ($1)
+        | ExprDecl -> Expr (EP ($1, []))
         | _ ->
             failwith (mkstr "'%s' not declared as var or expr." $1)
+      }
+  | ID WHERE expr_side_conds
+      { match lkup_decl $1 with
+        | ExprDecl -> Expr (EP ($1, $3))
+        | _ ->
+            failwith (mkstr "'%s' not declared as expr." $1)
       }
   | LPAREN expr RPAREN
       { $2 }
@@ -206,20 +201,13 @@ binop:
   | expr DIV expr
       { Binop (Div, $1, $3) }
 
-side_conds:
-  | side_cond
+code_side_conds:
+  | code_side_cond
       { $1 :: [] }
-  | side_cond COMMA side_conds
+  | code_side_cond COMMA code_side_conds
       { $1 :: $3 }
 
-side_cond:
-  | NOREAD 
-      { match lkup_decl $1 with
-        | OrigDecl -> NoRead (Orig $1)
-        | TempDecl -> NoRead (Temp $1)
-        | _ ->
-            failwith (mkstr "noread: '%s' not declared as var." $1)
-      }
+code_side_cond:
   | NOWRITE
       { match lkup_decl $1 with
         | OrigDecl -> NoWrite (Orig $1)
@@ -229,15 +217,24 @@ side_cond:
       }
   | NOAFFECT
       { match lkup_decl $1 with
-        | ExprDecl -> NoAffect (ExprParam $1)
+        | ExprDecl -> NoAffect (EP ($1, []))
         | _ ->
             failwith (mkstr "noaffect: '%s' not declared as expr." $1)
       }
-  | COMMUTES
+
+expr_side_conds:
+  | expr_side_cond
+      { $1 :: [] }
+  | expr_side_cond COMMA expr_side_conds
+      { $1 :: $3 }
+
+expr_side_cond:
+  | NOREAD
       { match lkup_decl $1 with
-        | StmtDecl -> Commutes (StmtParam ($1, []))
+        | OrigDecl -> NoRead (Orig $1)
+        | TempDecl -> NoRead (Temp $1)
         | _ ->
-            failwith (mkstr "commutes: '%s' not declared as stmt." $1)
+            failwith (mkstr "noread: '%s' not declared as var." $1)
       }
 
 %%

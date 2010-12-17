@@ -15,16 +15,16 @@ let synch_points paths =
   Common.uniq (ens @ exs)
 
 let entry (l, r) =
-  Prog.is_entry l &&
-  Prog.is_entry r
+  Prog.entry l &&
+  Prog.entry r
 
 let exit (l, r) =
-  Prog.is_exit l &&
-  Prog.is_exit r
+  Prog.exit l &&
+  Prog.exit r
 
 let invalid (l, r) =
-  Prog.is_entry l <> Prog.is_entry r ||
-  Prog.is_exit  l <> Prog.is_exit  r
+  Prog.entry l <> Prog.entry r ||
+  Prog.exit  l <> Prog.exit  r
 
 let recent_assume s n =
   let ins =
@@ -34,9 +34,9 @@ let recent_assume s n =
   in
   match ins with
   | [Prog.Assume c] ->
-      Logic.neq
-        (Logic.Int 0)
-        (Semantics.eval_expr s c)
+      c |> Semantics.eval_expr s
+        |> fst
+        |> Logic.neq (Logic.Int 0)
   | _ ->
       Logic.True
 

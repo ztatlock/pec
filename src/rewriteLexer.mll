@@ -45,9 +45,9 @@ rule token = parse
   | intlit as x
       { INTLIT (int_of_string x) }
   | "true"
-      { BOOLLIT true }
+      { TRUE }
   | "false"
-      { BOOLLIT false }
+      { FALSE }
 
   (* instructions *)
   | "nop"    { NOP    }
@@ -56,16 +56,12 @@ rule token = parse
   | "where"  { WHERE  }
 
   (* side conditions *)
-  | "pure"
-      { PURE }
   | "noread(" (id as x) ")"
       { NOREAD x }
   | "nowrite(" (id as x) ")"
       { NOWRITE x }
   | "noaffect(" (id as x) ")"
       { NOAFFECT x }
-  | "commutes(" (id as x) ")"
-      { COMMUTES x }
 
   (* control flow *)
   | ";"     { SEMI  }

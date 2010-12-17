@@ -36,7 +36,7 @@ let get_paths () =
 (* ie things that are not worth stopping for *)
 
 let boring_instr = function
-  | Prog.StmtParam _ -> false
+  | Prog.Code _ -> false
   | _ -> true
 
 let boring n =

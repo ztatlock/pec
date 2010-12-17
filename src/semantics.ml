@@ -3,88 +3,121 @@ open Common.ZPervasives
 open Logic
 
 let pvar = function
-  | Prog.Orig v ->
-      func "Orig" [var v]
-  | Prog.Temp v ->
-      func "Temp" [var v]
+  | Prog.Orig v -> func "Orig" [var v]
+  | Prog.Temp v -> func "Temp" [var v]
 
-let assign v e =
-  func "Assign" [pvar v; e]
+let lkup s v   = func "lkup" [s; v]
+let eval s e   = func "eval" [s; e]
+let step s i   = func "step" [s; i]
+let assign v e = func "Assign" [v; e]
 
-let lkup s v =
-  func "lkup" [state s; pvar v]
+(* evaluating expressions
+ *
+ * An expression E evaluates in state S.
+ *
+ * The result is a pair (V, SCS) where V represents the value E evalutates to in
+ * S and SCS is a list of formulas encoding the side conditions encountered while
+ * evaluating E in S.
+ *
+ *)
 
-let eval s id =
-  func "eval" [state s; var id]
-
-let step s i =
-  func "step" [s; i]
+(* handle expression parameter side conditions *)
+let apply_esc s e = function
+  | Prog.NoRead v ->
+      forall "val"
+        (eq (eval (state s) (var e))
+            (eval (step (state s) (assign (pvar v) (var "val"))) (var e)))
 
 let rec eval_expr s = function
   | Prog.IntLit i ->
-      Int i
-  | Prog.BoolLit b ->
-      if b then
-        Int 1
-      else
-        Int 0
+      ( Int i
+      , []
+      )
   | Prog.Var v ->
-      lkup s v
+      ( lkup (state s) (pvar v)
+      , []
+      )
   | Prog.Unop (o, e) ->
-      func (Prog.unop_str o)
-        [eval_expr s e]
+      let (v, scs) =
+        eval_expr s e
+      in
+      ( func (Prog.unop_str o) [v]
+      , scs
+      )
   | Prog.Binop (o, l, r) ->
-      func (Prog.binop_str o)
-        [ eval_expr s l
-        ; eval_expr s r
-        ]
-  | Prog.ExprParam id ->
-      eval s id
+      let (vl, scsl), (vr, scsr) =
+        eval_expr s l,
+        eval_expr s r
+      in
+      ( func (Prog.binop_str o) [vl; vr]
+      , scsl @ scsr
+      )
+  | Prog.Expr (Prog.EP (e, escs)) ->
+      ( eval (state s) (var e)
+      , List.map (apply_esc s e) escs
+      )
 
-let apply_side_cond s0 s1 = function
-  | Prog.NoRead v ->
-      (* TODO *)
-      True
+(* stepping instructions 
+ *
+ * An instruction I steps state S1 to the next state, S2.
+ *
+ * The result is a pair (S2, LINKS) where S2 represents the result state of
+ * stepping I in S1 and LINKS is a list of formulas encoding relationship of S1
+ * to S2 and the side conditions encountered while stepping S1 to S2.
+ *
+ *)
+
+(* handle code parameter side conditions *)
+let apply_csc s1 s2 c = function
   | Prog.NoWrite v ->
-      (eq (lkup s0 v)
-          (lkup s1 v))
-  | Prog.NoAffect e ->
-      (eq (eval_expr s0 e)
-          (eval_expr s1 e))
-  | Prog.Commutes e ->
-      (* TODO *)
-      True
+      eq (lkup (state s1) (pvar v))
+         (lkup (state s2) (pvar v))
+  | Prog.NoAffect (Prog.EP (e, _)) ->
+      eq (eval (state s1) (var e))
+         (eval (state s2) (var e))
 
-let step_instr (s0, lns) = function
+let step_instr (s1, links) = function
   | Prog.Nop ->
-      (s0, lns)
-  | Prog.Assign (v, e) ->
-      let s1 = next_state s0 in
-      let ln =
-        (eq (state s1)
-            (step (state s0)
-                  (assign v (eval_expr s0 e))))
+      ( s1
+      , links
+      )
+  | Prog.Assign (pv, e) ->
+      let (v, scs) =
+        eval_expr s1 e
       in
-      (s1, ln::lns)
+      let s2 =
+        next_state s1
+      in
+      let ln =
+        eq (state s2)
+           (step (state s1)
+                 (assign (pvar pv) v))
+      in
+      ( s2
+      , scs @ ln :: links
+      )
   | Prog.Assume e ->
+      let (v, scs) =
+        eval_expr s1 e
+      in
       let ln =
-        (neq (Int 0)
-             (eval_expr s0 e))
+        neq (Int 0) v
       in
-      (s0, ln::lns)
-  | Prog.StmtParam (id, side_conds) ->
-      let s1 = next_state s0 in
+      ( s1
+      , scs @ ln :: links
+      )
+  | Prog.Code (Prog.CP (c, cscs)) ->
+      let s2 = next_state s1 in
       let ln =
-        (eq (state s1)
-            (step (state s0)
-                  (var id)))
+        eq (state s2)
+           (step (state s1) (var c))
       in
-      let side_lns =
-        List.map
-          (apply_side_cond s0 s1)
-          side_conds
+      let scs =
+        List.map (apply_csc s1 s2 c) cscs
       in
-      (s1, side_lns @ ln::lns)
+      ( s2
+      , scs @ ln :: links
+      )
 
 let step_path p s =
   p |> Prog.path_edges

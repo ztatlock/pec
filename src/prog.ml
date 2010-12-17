@@ -25,6 +25,21 @@ type var =
  *
  *)
 
+(* pattern parameters : represent unknown program fragments *)
+
+type expr_side_cond =
+  | NoRead of var
+
+type expr_param =
+  | EP of id * expr_side_cond list
+
+type code_side_cond =
+  | NoWrite  of var
+  | NoAffect of expr_param (* expr evals the same before and after code *)
+
+type code_param =
+  | CP of id * code_side_cond list
+
 type unop =
   | Not
 
@@ -34,33 +49,19 @@ type binop =
   | Add | Sub | Mul | Div
 
 type expr =
-  | IntLit    of int
-  | BoolLit   of bool
-  | Var       of var
-  | Unop      of unop * expr
-  | Binop     of binop * expr * expr
-  | ExprParam of id
-  (* TODO : add side conds for exprs
-   *
-   * e.g. "e noread(x)"
-   *
-   * (FORALL (val)
-   *   (EQ (eval l0 e)
-   *       (eval (step l0 (Assign (Orig x) val)) e)))
-   *)
+  | IntLit of int
+  | Var    of var
+  | Unop   of unop * expr
+  | Binop  of binop * expr * expr
+  | Expr   of expr_param
 
 type instr =
   | Nop
-  | Assign    of var * expr
-  | Assume    of expr
-  | StmtParam of id * side_cond list
-  (* TODO : StmtParam with holes : S[I] *)
-
-and side_cond =
-  | NoRead   of var   (* does not read var *)
-  | NoWrite  of var   (* does not write var *)
-  | NoAffect of expr  (* expr evals the same before and after *)
-  | Commutes of instr (* swapping exec order yields same state *)
+  | Assign of var * expr
+  | Assume of expr
+  | Code   of code_param
+  (* TODO : Code param with holes : S[I] *)
+  (* PCode ... *)
 
 type stmt =
   | Instr  of instr
@@ -103,42 +104,54 @@ let var_str = function
   | Orig id -> mkstr "(Orig %s)" id
   | Temp id -> mkstr "(Temp %s)" id
 
+let esc_str = function
+  | NoRead v ->
+      mkstr "(NoRead %s)" (var_str v)
+
+let expr_param_str = function
+  | EP (id, escs) ->
+      escs |> List.map esc_str
+           |> String.concat "; "
+           |> mkstr "(CP (%s, [%s]))" id
+
+let csc_str = function
+  | NoWrite v ->
+      mkstr "(NoWrite %s)" (var_str v)
+  | NoAffect ep ->
+      mkstr "(NoAffect %s)" (expr_param_str ep)
+
+let code_param_str = function
+  | CP (id, cscs) ->
+      cscs |> List.map csc_str
+           |> String.concat "; "
+           |> mkstr "(CP (%s, [%s]))" id
+
 let unop_str = function
   | Not -> "Not"
 
 let binop_str = function
-  | Or  -> "Or"
-  | And -> "And"
-  | Eq  -> "Eq"
-  | Neq -> "Neq"
-  | Lt  -> "Lt"
-  | Lte -> "Lte"
-  | Gt  -> "Gt"
-  | Gte -> "Gte"
-  | Add -> "Add"
-  | Sub -> "Sub"
-  | Mul -> "Mul"
-  | Div -> "Div"
+  | Or  -> "Or"  | And -> "And" | Eq  -> "Eq"  | Neq -> "Neq"
+  | Lt  -> "Lt"  | Lte -> "Lte" | Gt  -> "Gt"  | Gte -> "Gte"
+  | Add -> "Add" | Sub -> "Sub" | Mul -> "Mul" | Div -> "Div"
 
 let rec expr_str = function
   | IntLit i ->
       mkstr "(IntLit %d)" i
-  | BoolLit b ->
-      mkstr "(BoolLit %b)" b
   | Var v ->
       mkstr "(Var %s)"
         (var_str v)
   | Unop (op, e) ->
-      mkstr "(UnOp %s %s)"
+      mkstr "(UnOp (%s, %s))"
         (unop_str op)
         (expr_str e)
   | Binop (op, l, r) ->
-      mkstr "(BinOp %s %s %s)"
+      mkstr "(BinOp (%s, %s, %s))"
         (binop_str op)
         (expr_str l)
         (expr_str r)
-  | ExprParam id ->
-      mkstr "(ExprParam %s)" id
+  | Expr ep ->
+      mkstr "(Expr %s)"
+        (expr_param_str ep)
 
 let rec instr_str = function
   | Nop ->
@@ -150,20 +163,9 @@ let rec instr_str = function
   | Assume e ->
       mkstr "(Assume %s)"
         (expr_str e)
-  | StmtParam (id, scs) ->
-      scs |> List.map side_cond_str
-          |> String.concat " "
-          |> mkstr "(StmtParam %s %s)" id
-
-and side_cond_str = function
-  | NoRead v ->
-      mkstr "(noread %s)" (var_str v)
-  | NoWrite v ->
-      mkstr "(nowrite %s)" (var_str v)
-  | NoAffect e ->
-      mkstr "(noaffect %s)" (expr_str e)
-  | Commutes i ->
-      mkstr "(commutes %s)" (instr_str i)
+  | Code cp ->
+      mkstr "(Code %s)"
+        (code_param_str cp)
 
 let rec stmt_str = function
   | Instr i ->
@@ -200,40 +202,49 @@ and for_header_str h =
 let ast_str a =
   stmt_str a.root
 
-let edge_str e =
-  mkstr "%d %s %d"
-    e.src.nid
-    (instr_str e.instr)
-    e.snk.nid
-
 (* pretty string reprs *)
 
 let var_pretty = function
   | Orig v -> v
   | Temp v -> v
 
+let esc_pretty = function
+  | NoRead v ->
+      mkstr "noread(%s)" (var_pretty v)
+
+let expr_param_pretty = function
+  | EP (id, []) ->
+      id
+  | EP (id, escs) ->
+      escs |> List.map esc_pretty
+           |> String.concat ", "
+           |> mkstr "(%s where %s)" id
+
+let csc_pretty = function
+  | NoWrite v ->
+      mkstr "nowrite(%s)" (var_pretty v)
+  | NoAffect ep ->
+      mkstr "noaffect(%s)" (expr_param_pretty ep)
+
+let code_param_pretty = function
+  | CP (id, []) ->
+      id
+  | CP (id, cscs) ->
+      cscs |> List.map csc_pretty
+           |> String.concat ", "
+           |> mkstr "%s where %s" id
+
 let unop_pretty = function
   | Not -> "!"
 
 let binop_pretty = function
-  | Or  -> "||"
-  | And -> "&&"
-  | Eq  -> "=="
-  | Neq -> "!="
-  | Lt  -> "<"
-  | Lte -> "<="
-  | Gt  -> ">"
-  | Gte -> ">="
-  | Add -> "+"
-  | Sub -> "-"
-  | Mul -> "*"
-  | Div -> "/"
+  | Or  -> "||" | And -> "&&" | Eq  -> "==" | Neq -> "!="
+  | Lt  -> "<"  | Lte -> "<=" | Gt  -> ">"  | Gte -> ">="
+  | Add -> "+"  | Sub -> "-"  | Mul -> "*"  | Div -> "/"
 
 let rec expr_pretty = function
   | IntLit i ->
       mkstr "%d" i
-  | BoolLit b ->
-      mkstr "%b" b
   | Var v ->
       var_pretty v
   | Unop (op, e) ->
@@ -245,8 +256,8 @@ let rec expr_pretty = function
         (expr_pretty l)
         (binop_pretty op)
         (expr_pretty r)
-  | ExprParam id ->
-      id
+  | Expr ep ->
+      expr_param_pretty ep
 
 let rec instr_pretty = function
   | Nop ->
@@ -260,26 +271,13 @@ let rec instr_pretty = function
         (expr_pretty e)
   | Assume e ->
       expr_pretty e
-  | StmtParam (id, scs) ->
-      scs |> List.map side_cond_pretty
-          |> String.concat ", "
-          |> fun s ->
-               if s <> "" then
-                 mkstr "%s where %s" id s
-               else
-                 id
-
-and side_cond_pretty = function
-  | NoRead v ->
-      mkstr "noread(%s)" (var_pretty v)
-  | NoWrite v ->
-      mkstr "nowrite(%s)" (var_pretty v)
-  | NoAffect e ->
-      mkstr "noaffect(%s)" (expr_pretty e)
-  | Commutes i ->
-      mkstr "commutes(%s)" (instr_pretty i)
+  | Code cp ->
+      code_param_pretty cp
 
 (* AST utilities *)
+
+let mkast s =
+  { root = s }
 
 let assume c =
   Assume c
@@ -296,8 +294,6 @@ let desugar_for h b =
 let rec expr_vars = function
   | IntLit _ ->
       []
-  | BoolLit _ ->
-      []
   | Var v ->
       [v]
   | Unop (_, e) ->
@@ -305,7 +301,7 @@ let rec expr_vars = function
   | Binop (_, l, r) ->
       expr_vars l @
       expr_vars r
-  | ExprParam _ ->
+  | Expr _ ->
       []
 
 let instr_vars = function
@@ -315,7 +311,7 @@ let instr_vars = function
       v :: (expr_vars e)
   | Assume e ->
       expr_vars e
-  | StmtParam _ ->
+  | Code _ ->
       []
 
 (* CFG utilities *)
@@ -376,10 +372,10 @@ let succs n =
     (fun e -> e.snk)
     n.out_edges
 
-let is_entry n =
+let entry n =
   n.in_edges = []
 
-let is_exit n =
+let exit n =
   n.out_edges = []
 
 let nid n =
@@ -421,8 +417,8 @@ let ast_cfg a =
     | For (header, body) ->
         add (desugar_for header body) root
   in
-  (* to support is_entry, make every CFG begin *)
-  (* with a node that has no predecessors      *)
+  (* support entry: make every CFG begin  *)
+  (* with a node that has no predecessors *)
   let s = Seq (Instr Nop, a.root) in
   let n = add s (mknode ()) in
   { enter = n }
@@ -459,6 +455,14 @@ let path_vars p =
     |> List.map instr_vars
     |> List.flatten
     |> Common.uniq
+
+(*
+let edge_str e =
+  mkstr "%d %s %d"
+    e.src.nid
+    (instr_str e.instr)
+    e.snk.nid
+*)
 
 let path_edge_str e =
   mkstr "  %2d %s"
