@@ -14,11 +14,12 @@ type term =
 type form =
   | True
   | False
-  | Eq    of term * term
-  | Neq   of term * term
-  | Conj  of form list
-  | Imply of form * form
-  | Pred  of string * term list
+  | Eq     of term * term
+  | Neq    of term * term
+  | Conj   of form list
+  | Imply  of form * form
+  | Pred   of string * term list
+  | Forall of string * form
 
 type simrel =
   ((Prog.node * Prog.node) * form) list
@@ -32,12 +33,10 @@ let neq a b     = Neq (a, b)
 let conj fs     = Conj fs
 let imply a b   = Imply (a, b) 
 let pred p args = Pred (p, args)
+let forall v f  = Forall (v, f)
 
-let start_l =
-  L 0
-
-let start_r =
-  R 0
+let start_l = L 0
+let start_r = R 0
 
 let next_state = function
   | L _ -> L (tock ())
@@ -90,6 +89,9 @@ let rec form_simp = function
       args |> List.map term_simp
            |> String.concat " "
            |> mkstr "(%s %s)" p
+  | Forall (v, f) ->
+      mkstr "(FORALL (%s) %s)" v
+        (form_simp f)
 
 (* term replacement *)
 
@@ -126,6 +128,8 @@ let rec replace t1 t2 = function
   | Pred (p, args) ->
       args |> List.map (replace_term t1 t2)
            |> pred p
+  | Forall (v, f) ->
+      forall v (replace t1 t2 f)
 
 let replace_start_l lN =
   replace (state start_l)
