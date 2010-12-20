@@ -151,6 +151,14 @@ let step_assign_var_neq =
   ; "               (lkup state var2))))"
   ]
 
+(* unop axioms *)
+
+let ax_not =
+  [ "(FORALL (expr)"
+  ; "  (IMPLIES (NEQ 0 (Not expr))"
+  ; "           (EQ  0 expr)))"
+  ]
+
 (* binop axioms *)
 
 let ax_add =
@@ -230,6 +238,7 @@ let ax_not_gte_lt =
 let axioms =
   [ step_assign_var_eq
   ; step_assign_var_neq
+  ; ax_not
   ; ax_add
   ; ax_sub
   ; ax_mul
