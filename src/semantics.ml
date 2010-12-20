@@ -24,7 +24,7 @@ let assign v e = func "Assign" [v; e]
 (* handle expression parameter side conditions *)
 let apply_esc s e = function
   | Prog.NoRead v ->
-      forall "val"
+      forall ["val"]
         (eq (eval (state s) (var e))
             (eval (step (state s) (assign (pvar v) (var "val"))) (var e)))
 

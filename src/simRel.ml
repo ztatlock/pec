@@ -58,7 +58,11 @@ let guess_invariant np =
     recent_assumes np
 
 let guess_entry np =
-  (np, guess_invariant np)
+  let i =
+    np |> guess_invariant
+       |> Logic.simplify
+  in
+  (np, i)
 
 let infer rwr =
   let sr =

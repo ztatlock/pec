@@ -21,6 +21,9 @@ end
 
 open ZPervasives
 
+let cons h t = h :: t
+let snoc t h = h :: t
+
 let last l =
   l |> List.rev
     |> List.hd

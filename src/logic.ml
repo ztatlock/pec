@@ -5,6 +5,7 @@ type state =
   | L of int
   | R of int
 
+(* TODO add program var term *)
 type term =
   | Int   of int
   | Var   of string
@@ -16,24 +17,26 @@ type form =
   | False
   | Eq     of term * term
   | Neq    of term * term
+  | Pred   of string * term list
   | Conj   of form list
   | Imply  of form * form
-  | Pred   of string * term list
-  | Forall of string * form
+  (* forall term option represents firing pattern *)
+  | Forall of string list * term option * form
 
 type simrel =
   ((Prog.node * Prog.node) * form) list
 
 (* curried constructors *)
-let var v       = Var v
-let state s     = State s
-let func f args = Func (f, args)
-let eq a b      = Eq (a, b)
-let neq a b     = Neq (a, b)
-let conj fs     = Conj fs
-let imply a b   = Imply (a, b) 
-let pred p args = Pred (p, args)
-let forall v f  = Forall (v, f)
+let var v         = Var v
+let state s       = State s
+let func f args   = Func (f, args)
+let eq a b        = Eq (a, b)
+let neq a b       = Neq (a, b)
+let pred p args   = Pred (p, args)
+let conj fs       = Conj fs
+let imply a b     = Imply (a, b)
+let forall v f    = Forall (v, None, f)
+let forallp v p f = Forall (v, p, f)
 
 let start_l = L 0
 let start_r = R 0
@@ -45,6 +48,51 @@ let next_state = function
 let state_eq =
   eq (state start_l)
      (state start_r)
+
+(* list all the states mentioned in a formula *)
+
+let rec term_states = function
+  | Int _
+  | Var _ ->
+      []
+  | State s ->
+      [s]
+  | Func (_, args) ->
+      args |> List.map term_states
+           |> List.flatten
+
+let term_states t =
+  t |> term_states
+    |> Common.uniq
+
+let rec form_states = function
+  | True
+  | False ->
+      []
+  | Eq (a, b)
+  | Neq (a, b) ->
+      (term_states a) @
+      (term_states b)
+  | Pred (_, args) ->
+      args |> List.map term_states
+           |> List.flatten
+  | Conj fs ->
+      fs |> List.map form_states
+         |> List.flatten
+  | Imply (a, b) ->
+      (form_states a) @
+      (form_states b)
+  | Forall (_, _, f) ->
+      form_states f
+
+let form_states f =
+  f |> form_states
+    |> Common.uniq
+
+let form_states_nostart f =
+  f |> form_states
+    |> List.filter (fun s -> s <> start_l)
+    |> List.filter (fun s -> s <> start_r)
 
 (* simplify repr, essentially sexprs *)
 
@@ -77,21 +125,36 @@ let rec form_simp = function
       mkstr "(NEQ %s %s)"
         (term_simp a)
         (term_simp b)
+  | Pred (p, args) ->
+      args |> List.map term_simp
+           |> String.concat " "
+           |> mkstr "(%s %s)" p
   | Conj fs ->
       fs |> List.map form_simp
          |> String.concat "\n\n"
          |> mkstr "(AND\n\n%s\n\n)"
   | Imply (a, b) ->
-      mkstr "(IMPLIES\n\n%s\n\n%s\n\n)"
-        (form_simp a)
-        (form_simp b)
-  | Pred (p, args) ->
-      args |> List.map term_simp
-           |> String.concat " "
-           |> mkstr "(%s %s)" p
-  | Forall (v, f) ->
-      mkstr "(FORALL (%s) %s)" v
-        (form_simp f)
+      String.concat "\n\n"
+        [ "(IMPLIES"
+        ; form_simp a
+        ; form_simp b
+        ; ")"
+        ]
+  | Forall (vs, po, f) ->
+      let v =
+        String.concat " " vs
+      in
+      let p =
+        match po with
+        | Some t -> term_simp t
+        | None   -> ""
+      in
+      String.concat "\n\n"
+        [ mkstr "(FORALL (%s)" v
+        ; mkstr "(PATS %s)" p
+        ; form_simp f
+        ; ")"
+        ]
 
 (* term replacement *)
 
@@ -119,17 +182,17 @@ let rec replace t1 t2 = function
   | Neq (a, b) ->
       neq (replace_term t1 t2 a)
           (replace_term t1 t2 b)
+  | Pred (p, args) ->
+      args |> List.map (replace_term t1 t2)
+           |> pred p
   | Conj fs ->
       fs |> List.map (replace t1 t2)
          |> conj
   | Imply (a, b) ->
       imply (replace t1 t2 a)
             (replace t1 t2 b)
-  | Pred (p, args) ->
-      args |> List.map (replace_term t1 t2)
-           |> pred p
-  | Forall (v, f) ->
-      forall v (replace t1 t2 f)
+  | Forall (vs, po, f) ->
+      forallp vs po (replace t1 t2 f)
 
 let replace_start_l lN =
   replace (state start_l)
@@ -138,6 +201,49 @@ let replace_start_l lN =
 let replace_start_r rN =
   replace (state start_r)
           (state rN)
+
+(* simplify formula by simple axioms *)
+
+let flatten_ands conjs =
+  conjs |> List.map
+             (function Conj fs -> fs
+                     | _ as f  -> [f])
+        |> List.flatten
+
+let rec simp = function
+  | True
+  | False
+  | Eq _
+  | Neq _
+  | Pred _ as f ->
+      f
+  | Conj [] ->
+      True
+  | Conj [f] ->
+      f
+  | Conj fs ->
+      if List.mem False fs then
+        False
+      else
+        fs |> List.filter (fun f -> f <> True)
+           |> flatten_ands
+           |> List.map simp
+           |> conj
+  | Imply (True, f) ->
+      f
+  | Imply (False, _) ->
+      True
+  | Imply (a, b) ->
+      imply (simp a) (simp b)
+  | Forall (vs, po, f) ->
+      forallp vs po (simp f)
+
+let rec simplify f1 =
+  let f2 = simp f1 in
+  if f2 = f1 then
+    f2
+  else
+    simplify f2
 
 (* dispatch atp query *)
 
@@ -158,7 +264,11 @@ let z3 axioms query =
   Common.readlines f1 = [ "1: Valid." ]
 
 let valid axioms form =
-  let v = z3 axioms (form_simp form) in
+  let v =
+    form |> simplify
+         |> form_simp
+         |> z3 axioms
+  in
   if Flags.get "interactive" = "" then begin
     v
   end else begin
