@@ -29,6 +29,24 @@ let set_simrel rwr sr =
 let update_simrel rwr np sp =
   rwr.simrel <- (np, sp) :: rwr.simrel
 
+(* utilities *)
+
+let simrel_entry rwr np =
+  try
+    List.assoc np rwr.simrel
+  with Not_found ->
+    failwith
+      (mkstr "no simrel entry at: (%d, %d)"
+        (fst np).Prog.nid
+        (snd np).Prog.nid)
+
+let parse file =
+  file |> Common.file_str
+       |> Lexing.from_string
+       |> RewriteParser.rewrite RewriteLexer.token
+       |> pair_map Prog.ast_cfg
+       |> mk_rewrite
+
 (* logging *)
 
 let log_cfgs rwr =
@@ -65,21 +83,97 @@ let log_simrel rwr =
     |> String.concat "\n"
     |> Common.log
 
-(* utilities *)
+(* dumping dot repr *)
 
-let simrel_entry rwr np =
-  try
-    List.assoc np rwr.simrel
-  with Not_found ->
-    failwith
-      (mkstr "no simrel entry at: (%d, %d)"
-        (fst np).Prog.nid
-        (snd np).Prog.nid)
+let color_ctr =
+  ref 0
 
-let parse file =
-  file |> Common.file_str
-       |> Lexing.from_string
-       |> RewriteParser.rewrite RewriteLexer.token
-       |> pair_map Prog.ast_cfg
-       |> mk_rewrite
+let colors =
+  [ "red"
+  ; "green"
+  ; "blue"
+  ; "purple"
+  ; "orange"
+  ]
+
+let next_color () =
+  incr color_ctr;
+  colors |> List.length
+         |> fun n -> !color_ctr mod n
+         |> List.nth colors
+
+let simrel_edge_dot (n1, n2) =
+  mkstr "  %2d -> %2d [%s];"
+    n1.Prog.nid
+    n2.Prog.nid
+    (String.concat ", "
+      [ "color=" ^ (next_color ())
+      ; "arrowhead=none"
+      ; "constraint=false"
+      ])
+
+let dot_str rwr =
+  let ens =
+    Prog.entries rwr.cfgl @
+    Prog.entries rwr.cfgr
+      |> List.map Prog.nid
+      |> List.map (mkstr "%2d")
+      |> String.concat "; "
+  in
+  let exs =
+    Prog.exits rwr.cfgl @
+    Prog.exits rwr.cfgr
+      |> List.map Prog.nid
+      |> List.map (mkstr "%2d")
+      |> String.concat "; "
+  in
+  let edges =
+    Prog.cfg_dot_body rwr.cfgl ^
+    Prog.cfg_dot_body rwr.cfgr
+  in
+  let xs =
+    rwr.simrel
+      |> List.map fst
+      |> List.map simrel_edge_dot
+      |> String.concat "\n"
+  in
+  let ndprops =
+    String.concat ", "
+      [ "fontsize=10"
+      ; "fontname=\"Courier\""
+      ; "shape=box"
+      ; "fixedsize=true"
+      ; "height=0.4"
+      ; "width=0.4"
+      ]
+  in
+  let edprops =
+    String.concat ", "
+      [ "fontsize=10"
+      ; "fontname=\"Courier\""
+      ; "minlen=2"
+      ]
+  in
+  String.concat "\n"
+    [ "digraph {"
+    ; "  node [" ^ ndprops ^ "];"
+    ; "  edge [" ^ edprops ^ "];"
+    ; "  {rank=source; " ^ ens ^ "}"
+    ; "  {rank=sink;   " ^ exs ^ "}"
+    ; edges
+    ; xs
+    ; "}\n"
+    ]
+
+let write_dot rwr =
+  let f = Flags.get "dot" in
+  if f <> "" then
+    rwr |> dot_str
+        |> Common.str_file f
+
+let log rwr =
+  rwr |> ff log_cfgs
+      |> ff log_paths
+      |> ff log_simrel
+      |> ff write_dot
 

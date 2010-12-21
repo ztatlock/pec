@@ -115,16 +115,10 @@ let log msg =
   logbuf := msg :: !logbuf
 
 let write_log () =
-  !logbuf
-    |> List.rev
-    |> String.concat "\n\n"
-    |> str_file (Flags.get "log")
-
-(* set default log file *)
-let _ =
-  Flags.set "log" "/tmp/pec-log"
-
-(* always write log to disk at program exit *)
-let _ =
-  at_exit write_log
+  let f = Flags.get "log" in
+  if f <> "" then
+    !logbuf
+      |> List.rev
+      |> String.concat "\n\n"
+      |> str_file f
 

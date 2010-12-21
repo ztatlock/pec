@@ -342,6 +342,12 @@ let cfg_edges g =
   add g.enter;
   List.rev !edges
 
+let cfg_nodes g =
+  g |> cfg_edges
+    |> List.map (fun e -> [e.src; e.snk])
+    |> List.flatten
+    |> Common.uniq
+
 let edge_instr e =
   e.instr
 
@@ -380,6 +386,14 @@ let exit n =
 
 let nid n =
   n.nid
+
+let entries g =
+  g |> cfg_nodes
+    |> List.filter entry
+
+let exits g =
+  g |> cfg_nodes
+    |> List.filter exit
 
 (* convert AST to CFG *)
 
@@ -426,15 +440,18 @@ let ast_cfg a =
 (* cfg dot repr *)
 
 let edge_dot e =
-  mkstr "  %2d -> %2d [label=\"%s\"];"
+  mkstr "  %2d -> %2d [label=\" %s\"];"
     e.src.nid
     e.snk.nid
     (instr_pretty e.instr)
 
-let cfg_dot ?(nm = "") g =
+let cfg_dot_body g =
   g |> cfg_edges
     |> List.map edge_dot
     |> String.concat "\n"
+
+let cfg_dot ?(nm = "") g =
+  g |> cfg_dot_body
     |> mkstr "digraph %s {\n%s\n}" nm
 
 (* path utilities *)
@@ -455,14 +472,6 @@ let path_vars p =
     |> List.map instr_vars
     |> List.flatten
     |> Common.uniq
-
-(*
-let edge_str e =
-  mkstr "%d %s %d"
-    e.src.nid
-    (instr_str e.instr)
-    e.snk.nid
-*)
 
 let path_edge_str e =
   mkstr "  %2d %s"

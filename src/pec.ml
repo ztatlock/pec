@@ -1,15 +1,16 @@
 open Common.ZPervasives
 
 let usage () =
-  "Usage: pec [options] <file>                                         \n" ^
-  "                                                                    \n" ^
-  "Attempt to automatically verify the rewrite rule in <file>.         \n" ^
-  "                                                                    \n" ^
-  "OPTIONS:                                                            \n" ^
-  "  -h, --help                   display this usage information       \n" ^
-  "  -i, --interactive            let user play theorem prover         \n" ^
-  "  -l, --log                    set log file (default: /tmp/pec-log) \n" ^
-  "                                                                    \n"
+  "Usage: pec [options] <file>                                  \n" ^
+  "                                                             \n" ^
+  "Attempt to automatically verify the rewrite rule in <file>.  \n" ^
+  "                                                             \n" ^
+  "OPTIONS:                                                     \n" ^
+  "  -h, --help               display this usage information    \n" ^
+  "  -i, --interactive        let user play theorem prover      \n" ^
+  "  -l, --log <file>         dump log to file                  \n" ^
+  "  -d, --dot <file>         dump CFG dot to file              \n" ^
+  "                                                             \n"
   |> print "%s"; exit 1
 
 let parse_args () =
@@ -29,6 +30,13 @@ let parse_args () =
           end else begin
             usage ()
           end
+      | "-d" | "--dot" ->
+          if i + 1 < n then begin
+            Flags.set "dot" Sys.argv.(i + 1);
+            loop (i + 2)
+          end else begin
+            usage ()
+          end
       | _ as a ->
           Flags.set "input" a;
           loop (i + 1)
@@ -41,16 +49,16 @@ let main () =
    "input"
       |> Flags.get
       |> Rewrite.parse
-      |> ff Rewrite.log_cfgs
       |> Synch.infer
-      |> ff Rewrite.log_paths
       |> SimRel.infer
-      |> ff Rewrite.log_simrel
+      |> Rewrite.log
       |> Check.check
   then
     print "VALID\n"
   else
     print "INVALID\n"
 
-let _ = main ()
+let _ =
+  () |> main
+     |> Common.write_log
 
