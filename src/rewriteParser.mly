@@ -44,9 +44,9 @@ let parse_error s =
 %token ASSUME
 %token WHERE
 
-%token <Prog.id> NOREAD
-%token <Prog.id> NOWRITE
-%token <Prog.id> NOAFFECT
+%token NOREAD
+%token NOWRITE
+%token NOAFFECT
 
 %token SEMI
 %token IF
@@ -208,19 +208,10 @@ code_side_conds:
       { $1 :: $3 }
 
 code_side_cond:
-  | NOWRITE
-      { match lkup_decl $1 with
-        | OrigDecl -> NoWrite (Orig $1)
-        | TempDecl -> NoWrite (Temp $1)
-        | _ ->
-            failwith (mkstr "nowrite: '%s' not declared as var." $1)
-      }
-  | NOAFFECT
-      { match lkup_decl $1 with
-        | ExprDecl -> NoAffect (EP ($1, []))
-        | _ ->
-            failwith (mkstr "noaffect: '%s' not declared as expr." $1)
-      }
+  | NOWRITE LPAREN var RPAREN
+      { NoWrite $3 }
+  | NOAFFECT LPAREN ID RPAREN
+      { NoAffect (EP ($3, [])) }
 
 expr_side_conds:
   | expr_side_cond
@@ -229,13 +220,8 @@ expr_side_conds:
       { $1 :: $3 }
 
 expr_side_cond:
-  | NOREAD
-      { match lkup_decl $1 with
-        | OrigDecl -> NoRead (Orig $1)
-        | TempDecl -> NoRead (Temp $1)
-        | _ ->
-            failwith (mkstr "noread: '%s' not declared as var." $1)
-      }
+  | NOREAD LPAREN var RPAREN
+      { NoRead $3 }
 
 %%
 

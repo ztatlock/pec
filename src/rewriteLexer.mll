@@ -42,12 +42,9 @@ rule token = parse
   | "/"  { DIV }
 
   (* literals *)
-  | intlit as x
-      { INTLIT (int_of_string x) }
-  | "true"
-      { TRUE }
-  | "false"
-      { FALSE }
+  | intlit as x { INTLIT (int_of_string x) }
+  | "true"      { TRUE                     }
+  | "false"     { FALSE                    }
 
   (* instructions *)
   | "nop"    { NOP    }
@@ -56,12 +53,9 @@ rule token = parse
   | "where"  { WHERE  }
 
   (* side conditions *)
-  | "noread(" (id as x) ")"
-      { NOREAD x }
-  | "nowrite(" (id as x) ")"
-      { NOWRITE x }
-  | "noaffect(" (id as x) ")"
-      { NOAFFECT x }
+  | "noread"   { NOREAD   }
+  | "nowrite"  { NOWRITE  }
+  | "noaffect" { NOAFFECT }
 
   (* control flow *)
   | ";"     { SEMI  }
@@ -85,8 +79,7 @@ rule token = parse
   | eof { EOF    }
 
   (* variables *)
-  | id as x
-      { ID x }
+  | id as x { ID x }
             
   (* ignore *)
   | comment    { token lexbuf }
