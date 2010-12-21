@@ -2,23 +2,7 @@
 
 open Common.ZPervasives
 
-(* track pairs of nodes already searched *)
-
-let marks : (int * int) list ref =
-  ref []
-
-let reset_marks () =
-  marks := []
-
-let mark np =
-  let x = pair_map Prog.nid np in
-  marks := x :: !marks
-
-let marked np =
-  let x = pair_map Prog.nid np in
-  List.mem x !marks
-
-(* remember paths found *)
+(* remember pairs of paths already seen *)
 
 let paths : (Prog.path * Prog.path) list ref  =
   ref []
@@ -26,11 +10,23 @@ let paths : (Prog.path * Prog.path) list ref  =
 let reset_paths () =
   paths := []
 
-let add_paths l r =
+let mark l r =
   paths := (l, r) :: !paths
 
+(* use nid for lkup since node structs may be cyclic *)
+let marked l r =
+  let nids =
+    pair_map (List.map Prog.nid)
+  in
+  List.exists
+    (fun x -> nids x = nids (l, r))
+    !paths
+
+(* paths are reversed and stored in reverse order *)
+(* see start/walk comments below for motivation   *)
 let get_paths () =
-  List.rev !paths
+  !paths |> List.map (pair_map List.rev)
+         |> List.rev
 
 (* boring: what we lump between synch points *)
 (* ie things that are not worth stopping for *)
@@ -61,27 +57,23 @@ let rec start l r =
 and walk pl pr =
   let l = List.hd pl in
   let r = List.hd pr in
-  if marked (l, r) then
+  if boring l then
+    List.iter
+      (fun sl -> walk (sl :: pl) pr)
+      (Prog.succs l)
+  else if boring r then
+    List.iter
+      (fun sr -> walk pl (sr :: pr))
+      (Prog.succs r)
+  else if marked pl pr then
     ()
   else begin
-    mark (l, r);
-    if boring l then
-      List.iter
-        (fun sl -> walk (sl :: pl) pr)
-        (Prog.succs l)
-    else if boring r then
-      List.iter
-        (fun sr -> walk pl (sr :: pr))
-        (Prog.succs r)
-    else begin
-      add_paths (List.rev pl) (List.rev pr);
-      start l r
-    end
+    mark pl pr;
+    start l r
   end
 
 let infer_paths rwr =
   (* initialize state *)
-  reset_marks ();
   reset_paths ();
   let enl, enr =
     rwr.Rewrite.cfgl.Prog.enter,
