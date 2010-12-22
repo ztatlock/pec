@@ -269,12 +269,21 @@ let valid axioms form =
          |> form_simp
          |> z3 axioms
   in
-  if Flags.get "interactive" = "" then begin
+  if Flags.get "interactive" = "" then
     v
-  end else begin
-    print "\n\n%s\n\n" (form_simp form);
-    print "z3 says \"%b\".\n" v;
-    print "what do you say? ";
-    read_line () = "true"
+  else begin
+    printlns
+      [ ""
+      ; ""
+      ; form_simp form
+      ; ""
+      ; ""
+      ; mkstr "z3 says \"%b\"." v
+      ; "Do you agree? "
+      ];
+    if read_line () = "no" then
+      not v
+    else
+      v
   end
 

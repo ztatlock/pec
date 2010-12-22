@@ -17,6 +17,10 @@ module ZPervasives = struct
 
   let print = Printf.printf
   let mkstr = Printf.sprintf
+
+  let printlns ls =
+    ls |> String.concat "\n"
+       |> print "%s"
 end
 
 open ZPervasives

@@ -66,7 +66,10 @@ let path_pair_str (l, r) =
   Common.side_by_side sl sr
 
 let log_paths rwr =
-  Common.log ">>> Synched Path Progs";
+  rwr.paths
+    |> List.length
+    |> mkstr ">>> Synched Path Progs (%d)"
+    |> Common.log;
   rwr.paths
     |> List.map path_pair_str
     |> String.concat "\n\n"
