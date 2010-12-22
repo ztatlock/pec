@@ -29,6 +29,9 @@ let set_simrel rwr sr =
 let update_simrel rwr np sp =
   rwr.simrel <- (np, sp) :: rwr.simrel
 
+let paths rwr =
+  rwr.paths
+
 (* utilities *)
 
 let simrel_entry rwr np =
