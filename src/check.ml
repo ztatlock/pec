@@ -1,5 +1,4 @@
-
-open Common.ZPervasives
+open ZPervasives
 
 (* compute formula's forall firing pattern *)
 let pat f =

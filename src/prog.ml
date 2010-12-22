@@ -1,6 +1,6 @@
 (* prog.ml : AST and CFG Program Representations *)
 
-open Common.ZPervasives
+open ZPervasives
 
 type id = string
 

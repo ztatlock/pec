@@ -1,5 +1,5 @@
 
-open Common.ZPervasives
+open ZPervasives
 
 let synch_points paths =
   let ens =

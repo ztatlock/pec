@@ -1,6 +1,6 @@
 (* synch.ml : Infer Synchronized Path Programs *)
 
-open Common.ZPervasives
+open ZPervasives
 
 (* remember pairs of paths already seen *)
 

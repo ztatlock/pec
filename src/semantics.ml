@@ -1,5 +1,5 @@
 
-open Common.ZPervasives
+open ZPervasives
 open Logic
 
 let pvar = function

@@ -1,4 +1,4 @@
-open Common.ZPervasives
+open ZPervasives
 
 let usage () =
   "Usage: pec [options] <file>                                  \n" ^

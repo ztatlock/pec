@@ -1,6 +1,6 @@
 (* rewrite.ml : Rewrite Rule Representation *)
 
-open Common.ZPervasives
+open ZPervasives
 
 (* common representation for all inference and checking passes
  * should live in Prog but causes circular module dependencies

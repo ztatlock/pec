@@ -1,32 +1,4 @@
-let tick = ref 0
-
-module ZPervasives = struct
-  let (|>) x f = f x
-
-  (* fast forward *)
-  let ff f x =
-    f x |> ignore;
-    x
-
-  let tock () =
-    tick := !tick + 1;
-    !tick
-
-  let pair_map f (a, b) =
-    (f a, f b)
-
-  let print = Printf.printf
-  let mkstr = Printf.sprintf
-
-  let printlns ls =
-    ls |> String.concat "\n"
-       |> print "%s"
-end
-
 open ZPervasives
-
-let cons h t = h :: t
-let snoc t h = h :: t
 
 let last l =
   l |> List.rev
