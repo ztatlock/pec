@@ -6,10 +6,11 @@ let usage () =
   "Attempt to automatically verify the rewrite rule in <file>.  \n" ^
   "                                                             \n" ^
   "OPTIONS:                                                     \n" ^
+  "  -d, --dot <file>         dump CFG dot to file              \n" ^
   "  -h, --help               display this usage information    \n" ^
   "  -i, --interactive        let user play theorem prover      \n" ^
   "  -l, --log <file>         dump log to file                  \n" ^
-  "  -d, --dot <file>         dump CFG dot to file              \n" ^
+  "  -s, --strength N         limit simrel strengthenings to N  \n" ^
   "                                                             \n"
   |> print "%s"; exit 1
 
@@ -18,6 +19,13 @@ let parse_args () =
   let rec loop i =
     if i < n then
       match Sys.argv.(i) with
+      | "-d" | "--dot" ->
+          if i + 1 < n then begin
+            Flags.set "dot" Sys.argv.(i + 1);
+            loop (i + 2)
+          end else begin
+            usage ()
+          end
       | "-h" | "--help" ->
           usage ()
       | "-i" | "--interactive" ->
@@ -30,9 +38,9 @@ let parse_args () =
           end else begin
             usage ()
           end
-      | "-d" | "--dot" ->
+      | "-s" | "--strength" ->
           if i + 1 < n then begin
-            Flags.set "dot" Sys.argv.(i + 1);
+            Flags.set "strength" Sys.argv.(i + 1);
             loop (i + 2)
           end else begin
             usage ()

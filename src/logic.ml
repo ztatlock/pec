@@ -269,7 +269,7 @@ let valid axioms form =
          |> form_simp
          |> z3 axioms
   in
-  if Flags.get "interactive" = "" then
+  if Flags.get "interactive" <> "true" then
     v
   else begin
     printlns
