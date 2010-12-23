@@ -109,6 +109,8 @@ let ck_entry rwr (pp, q) =
   if ck_paths rwr pp then
     q
   else
+    (* put pp back on the queue *)
+    let q = UniQueue.push q pp in
     (* push all path pairs that precede pp *)
     rwr |> Rewrite.paths
         |> List.filter (precedes pp)
