@@ -351,6 +351,12 @@ let cfg_nodes g =
 let edge_instr e =
   e.instr
 
+let pred_instrs n =
+  List.map edge_instr n.in_edges
+
+let succ_instrs n =
+  List.map edge_instr n.out_edges
+
 let mknode () =
   { nid = tock ()
   ; in_edges  = []

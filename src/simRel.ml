@@ -2,15 +2,9 @@
 open ZPervasives
 
 let synch_points paths =
-  let ens =
-    List.map
-      (pair_map List.hd)
-      paths
-  in
-  let exs =
-    List.map
-      (pair_map Common.last)
-      paths
+  let ens, exs =
+    List.map (pair_map List.hd)     paths,
+    List.map (pair_map Common.last) paths
   in
   Common.uniq (ens @ exs)
 
@@ -26,13 +20,20 @@ let invalid (l, r) =
   Prog.entry l <> Prog.entry r ||
   Prog.exit  l <> Prog.exit  r
 
-let recent_assume s n =
-  let ins =
-    List.map
-      Prog.edge_instr
-      n.Prog.in_edges
+let neq_code_params (l, r) =
+  let il, ir =
+    Prog.succ_instrs l,
+    Prog.succ_instrs r
   in
-  match ins with
+  match il, ir with
+  | [Prog.Code (Prog.CP (sl, _))],
+    [Prog.Code (Prog.CP (sr, _))] ->
+      sl <> sr
+  | _ ->
+      false
+
+let recent_assume s n =
+  match Prog.pred_instrs n with
   | [Prog.Assume c] ->
       c |> Semantics.eval_expr s
         |> fst
@@ -53,6 +54,8 @@ let guess_invariant np =
   else if exit np then
     Logic.state_eq
   else if invalid np then
+    Logic.False
+  else if neq_code_params np then
     Logic.False
   else
     recent_assumes np
