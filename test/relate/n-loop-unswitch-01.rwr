@@ -1,0 +1,29 @@
+expr E1
+expr E2
+stmt S1
+stmt S2
+
+---
+
+while(E1) {
+  if(E2) {
+        # omit critical side conds
+    S1; # where noaffect(E2);
+  } else {
+        # omit critical side conds
+    S2; # where noaffect(E2);
+  }
+}
+
++++
+
+if(E2) {
+  while(E1) {
+    S1;
+  }
+} else {
+  while(E1) {
+    S2;
+  }
+}
+
