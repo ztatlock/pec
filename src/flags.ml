@@ -10,13 +10,15 @@ let get f =
   try
     List.assoc f !flags
   with Not_found ->
-    ""
+    f |> mkstr "Flag '%s' not set."
+      |> failwith
 
 (* default flag settings *)
 
 let _ =
   [ "dot"         , ""
   ; "interactive" , "false"
+  ; "input"       , ""
   ; "log"         , ""
   ; "strength"    , "10"
   ]

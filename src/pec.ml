@@ -1,18 +1,20 @@
 open ZPervasives
 
 let usage () =
-  "Usage: pec [options] <file>                                  \n" ^
-  "                                                             \n" ^
-  "Attempt to automatically verify the rewrite rule in <file>.  \n" ^
-  "                                                             \n" ^
-  "OPTIONS:                                                     \n" ^
-  "  -d, --dot <file>         dump CFG dot to file              \n" ^
-  "  -h, --help               display this usage information    \n" ^
-  "  -i, --interactive        let user play theorem prover      \n" ^
-  "  -l, --log <file>         dump log to file                  \n" ^
-  "  -s, --strength N         limit simrel strengthenings to N  \n" ^
-  "                                                             \n"
-  |> print "%s"; exit 1
+  printlns
+    [ "Usage: pec [options] <file>                                  "
+    ; "                                                             "
+    ; "Automatically check correctness of rewrite rule in <file>.   "
+    ; "                                                             "
+    ; "OPTIONS:                                                     "
+    ; "  -d, --dot <file>         dump CFG dot to file              "
+    ; "  -h, --help               display this usage information    "
+    ; "  -i, --interactive        let user play theorem prover      "
+    ; "  -l, --log <file>         dump log to file                  "
+    ; "  -s, --strength N         limit simrel strengthenings to N  "
+    ; "                                                             "
+    ];
+  exit 1
 
 let parse_args () =
   let n = Array.length Sys.argv in
@@ -23,9 +25,8 @@ let parse_args () =
           if i + 1 < n then begin
             Flags.set "dot" Sys.argv.(i + 1);
             loop (i + 2)
-          end else begin
+          end else
             usage ()
-          end
       | "-h" | "--help" ->
           usage ()
       | "-i" | "--interactive" ->
@@ -35,16 +36,14 @@ let parse_args () =
           if i + 1 < n then begin
             Flags.set "log" Sys.argv.(i + 1);
             loop (i + 2)
-          end else begin
+          end else
             usage ()
-          end
       | "-s" | "--strength" ->
           if i + 1 < n then begin
             Flags.set "strength" Sys.argv.(i + 1);
             loop (i + 2)
-          end else begin
+          end else
             usage ()
-          end
       | _ as a ->
           Flags.set "input" a;
           loop (i + 1)
