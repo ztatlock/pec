@@ -85,10 +85,10 @@ let ck_paths rwr pp =
   let obl = obligation rwr pp in
   log pp obl;
   if Logic.valid Semantics.axioms obl then begin
-    Common.log "[valid]";
+    Common.log "Valid.";
     true
   end else begin
-    Common.log "[invalid]";
+    Common.log "Invalid.";
     strengthen rwr pp obl;
     false
   end

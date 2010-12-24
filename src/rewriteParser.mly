@@ -66,7 +66,7 @@ let parse_error s =
 %token RCURL
 %token EOF
 
-%token <Prog.id> ID
+%token <string> ID
 
 %start rewrite
 %type <Prog.ast * Prog.ast> rewrite
@@ -83,21 +83,17 @@ let parse_error s =
 
 rewrite:
   | decls FIND stmt REPLACE stmt EOF
-      { (mkast $3, mkast $5) }
+      {mkast $3, mkast $5}
 
 decls:
   |            { }
   | decl decls { }
 
 decl:
-  | ORIG_DECL ID
-      { add_decl $2 OrigDecl }
-  | TEMP_DECL ID
-      { add_decl $2 TempDecl }
-  | EXPR_DECL ID
-      { add_decl $2 ExprDecl }
-  | STMT_DECL ID
-      { add_decl $2 StmtDecl }
+  | ORIG_DECL ID { add_decl $2 OrigDecl }
+  | TEMP_DECL ID { add_decl $2 TempDecl }
+  | EXPR_DECL ID { add_decl $2 ExprDecl }
+  | STMT_DECL ID { add_decl $2 StmtDecl }
 
 stmt:
   | basic_stmt
@@ -134,18 +130,22 @@ instr:
   | ASSUME LPAREN expr RPAREN
       { Assume $3 }
   | ID
-      { Code (CP ($1, [])) }
-  | ID WHERE code_side_conds
-      { Code (CP ($1, $3)) }
+      { match lkup_decl $1 with
+        | StmtDecl -> Code ($1, [])
+        | _ -> failwith (mkstr "'%s' not declared as stmt." $1)
+      }
+  | ID WHERE side_conds
+      { match lkup_decl $1 with
+        | StmtDecl -> Code ($1, $3)
+        | _ -> failwith (mkstr "'%s' not declared as stmt." $1)
+      }
 
 var:
-  | ID
-      { match lkup_decl $1 with
-        | OrigDecl -> Orig $1
-        | TempDecl -> Temp $1
-        | _ ->
-            failwith (mkstr "'%s' not declared as var." $1)
-      }
+  | ID { match lkup_decl $1 with
+         | OrigDecl -> Orig $1
+         | TempDecl -> Temp $1
+         | _ -> failwith (mkstr "'%s' not declared as var." $1)
+       }
 
 expr:
   | INTLIT
@@ -162,15 +162,13 @@ expr:
       { match lkup_decl $1 with
         | OrigDecl -> Var (Orig $1)
         | TempDecl -> Var (Temp $1)
-        | ExprDecl -> Expr (EP ($1, []))
-        | _ ->
-            failwith (mkstr "'%s' not declared as var or expr." $1)
+        | ExprDecl -> Expr ($1, [])
+        | _ -> failwith (mkstr "'%s' not declared as var or expr." $1)
       }
-  | ID WHERE expr_side_conds
+  | ID WHERE side_conds
       { match lkup_decl $1 with
-        | ExprDecl -> Expr (EP ($1, $3))
-        | _ ->
-            failwith (mkstr "'%s' not declared as expr." $1)
+        | ExprDecl -> Expr ($1, $3)
+        | _ -> failwith (mkstr "'%s' not declared as expr." $1)
       }
   | LPAREN expr RPAREN
       { $2 }
@@ -201,27 +199,19 @@ binop:
   | expr DIV expr
       { Binop (Div, $1, $3) }
 
-code_side_conds:
-  | code_side_cond
+side_conds:
+  | side_cond
       { $1 :: [] }
-  | code_side_cond COMMA code_side_conds
+  | side_cond COMMA side_conds
       { $1 :: $3 }
 
-code_side_cond:
+side_cond:
+  | NOREAD LPAREN var RPAREN
+      { NoRead $3 }
   | NOWRITE LPAREN var RPAREN
       { NoWrite $3 }
   | NOAFFECT LPAREN ID RPAREN
-      { NoAffect (EP ($3, [])) }
-
-expr_side_conds:
-  | expr_side_cond
-      { $1 :: [] }
-  | expr_side_cond COMMA expr_side_conds
-      { $1 :: $3 }
-
-expr_side_cond:
-  | NOREAD LPAREN var RPAREN
-      { NoRead $3 }
+      { NoAffect $3 }
 
 %%
 

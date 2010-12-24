@@ -26,8 +26,8 @@ let neq_code_params (l, r) =
     Prog.succ_instrs r
   in
   match il, ir with
-  | [Prog.Code (Prog.CP (sl, _))],
-    [Prog.Code (Prog.CP (sr, _))] ->
+  | [Prog.Code (sl, _)],
+    [Prog.Code (sr, _)] ->
       sl <> sr
   | _ ->
       false

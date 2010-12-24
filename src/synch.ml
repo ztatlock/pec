@@ -28,19 +28,16 @@ let get_paths () =
   !paths |> List.map (pair_map List.rev)
          |> List.rev
 
-(* boring: what we lump between synch points *)
-(* ie things that are not worth stopping for *)
-
-let boring_instr = function
+let skip_instr = function
   | Prog.Code _ -> false
   | _ -> true
 
-let boring n =
+let skip n =
   n.Prog.in_edges  <> [] &&
   n.Prog.out_edges <> [] &&
   n.Prog.out_edges
     |> List.map Prog.edge_instr
-    |> List.for_all boring_instr
+    |> List.for_all skip_instr
 
 (* infer synchronized path programs           *)
 (* NOTE: left and right paths are reversed    *)
@@ -57,11 +54,11 @@ let rec start l r =
 and walk pl pr =
   let l = List.hd pl in
   let r = List.hd pr in
-  if boring l then
+  if skip l then
     List.iter
       (fun sl -> walk (sl :: pl) pr)
       (Prog.succs l)
-  else if boring r then
+  else if skip r then
     List.iter
       (fun sr -> walk pl (sr :: pr))
       (Prog.succs r)
@@ -73,14 +70,9 @@ and walk pl pr =
   end
 
 let infer_paths rwr =
-  (* initialize state *)
   reset_paths ();
-  let enl, enr =
-    rwr.Rewrite.cfgl.Prog.enter,
-    rwr.Rewrite.cfgr.Prog.enter
-  in
-  (* run the inference *)
-  start enl enr;
+  start rwr.Rewrite.cfgl.Prog.enter
+        rwr.Rewrite.cfgr.Prog.enter;
   get_paths ()
 
 let infer rwr =

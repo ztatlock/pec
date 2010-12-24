@@ -27,6 +27,10 @@ let apply_esc s e = function
       forall ["val"]
         (eq (eval (state s) (var e))
             (eval (step (state s) (assign (pvar v) (var "val"))) (var e)))
+  | _ as sc ->
+      sc |> Prog.side_cond_pretty
+         |> mkstr "Bogus expression side cond '%s'"
+         |> failwith 
 
 let rec eval_expr s = function
   | Prog.IntLit i ->
@@ -52,9 +56,9 @@ let rec eval_expr s = function
       ( func (Prog.binop_str o) [vl; vr]
       , scsl @ scsr
       )
-  | Prog.Expr (Prog.EP (e, escs)) ->
+  | Prog.Expr (e, scs) ->
       ( eval (state s) (var e)
-      , List.map (apply_esc s e) escs
+      , List.map (apply_esc s e) scs
       )
 
 (* stepping instructions 
@@ -72,9 +76,13 @@ let apply_csc s1 s2 c = function
   | Prog.NoWrite v ->
       eq (lkup (state s1) (pvar v))
          (lkup (state s2) (pvar v))
-  | Prog.NoAffect (Prog.EP (e, _)) ->
+  | Prog.NoAffect e ->
       eq (eval (state s1) (var e))
          (eval (state s2) (var e))
+  | _ as sc ->
+      sc |> Prog.side_cond_pretty
+         |> mkstr "Bogus code side cond '%s'"
+         |> failwith 
 
 let step_instr (s1, links) = function
   | Prog.Nop ->
@@ -106,17 +114,17 @@ let step_instr (s1, links) = function
       ( s1
       , scs @ ln :: links
       )
-  | Prog.Code (Prog.CP (c, cscs)) ->
+  | Prog.Code (c, scs) ->
       let s2 = next_state s1 in
       let ln =
         eq (state s2)
            (step (state s1) (var c))
       in
-      let scs =
-        List.map (apply_csc s1 s2 c) cscs
+      let sclns =
+        List.map (apply_csc s1 s2 c) scs
       in
       ( s2
-      , scs @ ln :: links
+      , sclns @ ln :: links
       )
 
 let step_path p s =

@@ -2,11 +2,9 @@
 
 open ZPervasives
 
-type id = string
-
 type var =
-  | Orig of id (* must be preserved *)
-  | Temp of id (* fresh var, no need to preserve *)
+  | Orig of string (* must be preserved *)
+  | Temp of string (* fresh var, no need to preserve *)
 
 (* Orig -- location used in input prog, ensure rewrite preserves
  * Temp -- fresh temporary introduced by rewrite, safe to ignore
@@ -22,23 +20,12 @@ type var =
  * able to apply when it would actually be valid. This is because the execution
  * engine has to prove that Temp locations are dead at the end of the
  * transformed region.
- *
  *)
 
-(* pattern parameters : represent unknown program fragments *)
-
-type expr_side_cond =
-  | NoRead of var
-
-type expr_param =
-  | EP of id * expr_side_cond list
-
-type code_side_cond =
+type side_cond =
+  | NoRead   of var
   | NoWrite  of var
-  | NoAffect of expr_param (* expr evals the same before and after code *)
-
-type code_param =
-  | CP of id * code_side_cond list
+  | NoAffect of string (* expr evals same before and after *)
 
 type unop =
   | Not
@@ -53,15 +40,15 @@ type expr =
   | Var    of var
   | Unop   of unop * expr
   | Binop  of binop * expr * expr
-  | Expr   of expr_param
+  | Expr   of string * side_cond list
 
 type instr =
   | Nop
   | Assign of var * expr
   | Assume of expr
-  | Code   of code_param
+  | Code   of string * side_cond list
   (* TODO : Code param with holes : S[I] *)
-  (* PCode ... *)
+  (* PCode of string * expr list * side_cond list *)
 
 type stmt =
   | Instr  of instr
@@ -104,27 +91,13 @@ let var_str = function
   | Orig id -> mkstr "(Orig %s)" id
   | Temp id -> mkstr "(Temp %s)" id
 
-let esc_str = function
+let side_cond_str = function
   | NoRead v ->
       mkstr "(NoRead %s)" (var_str v)
-
-let expr_param_str = function
-  | EP (id, escs) ->
-      escs |> List.map esc_str
-           |> String.concat "; "
-           |> mkstr "(CP (%s, [%s]))" id
-
-let csc_str = function
   | NoWrite v ->
       mkstr "(NoWrite %s)" (var_str v)
-  | NoAffect ep ->
-      mkstr "(NoAffect %s)" (expr_param_str ep)
-
-let code_param_str = function
-  | CP (id, cscs) ->
-      cscs |> List.map csc_str
-           |> String.concat "; "
-           |> mkstr "(CP (%s, [%s]))" id
+  | NoAffect e ->
+      mkstr "(NoAffect %s)" e
 
 let unop_str = function
   | Not -> "Not"
@@ -149,9 +122,10 @@ let rec expr_str = function
         (binop_str op)
         (expr_str l)
         (expr_str r)
-  | Expr ep ->
-      mkstr "(Expr %s)"
-        (expr_param_str ep)
+  | Expr (e, scs) ->
+      scs |> List.map side_cond_str
+          |> String.concat "; "
+          |> mkstr "(Expr (%s, [%s]))" e
 
 let rec instr_str = function
   | Nop ->
@@ -163,9 +137,10 @@ let rec instr_str = function
   | Assume e ->
       mkstr "(Assume %s)"
         (expr_str e)
-  | Code cp ->
-      mkstr "(Code %s)"
-        (code_param_str cp)
+  | Code (c, scs) ->
+      scs |> List.map side_cond_str
+          |> String.concat "; "
+          |> mkstr "(Code (%s, [%s]))" c
 
 let rec stmt_str = function
   | Instr i ->
@@ -208,31 +183,13 @@ let var_pretty = function
   | Orig v -> v
   | Temp v -> v
 
-let esc_pretty = function
+let side_cond_pretty = function
   | NoRead v ->
       mkstr "noread(%s)" (var_pretty v)
-
-let expr_param_pretty = function
-  | EP (id, []) ->
-      id
-  | EP (id, escs) ->
-      escs |> List.map esc_pretty
-           |> String.concat ", "
-           |> mkstr "(%s where %s)" id
-
-let csc_pretty = function
   | NoWrite v ->
       mkstr "nowrite(%s)" (var_pretty v)
-  | NoAffect ep ->
-      mkstr "noaffect(%s)" (expr_param_pretty ep)
-
-let code_param_pretty = function
-  | CP (id, []) ->
-      id
-  | CP (id, cscs) ->
-      cscs |> List.map csc_pretty
-           |> String.concat ", "
-           |> mkstr "%s where %s" id
+  | NoAffect e ->
+      mkstr "noaffect(%s)" e
 
 let unop_pretty = function
   | Not -> "!"
@@ -251,18 +208,24 @@ let rec expr_pretty = function
       mkstr "%s%s"
         (unop_pretty op)
         (expr_pretty e)
+  (* TODO : omit unnecessary parens *)
   | Binop (op, l, r) ->
       mkstr "(%s %s %s)"
         (expr_pretty l)
         (binop_pretty op)
         (expr_pretty r)
-  | Expr ep ->
-      expr_param_pretty ep
+  | Expr (e, []) ->
+      e
+  | Expr (e, scs) ->
+      scs |> List.map side_cond_pretty
+          |> String.concat ", "
+          |> mkstr "%s where %s" e
 
 let rec instr_pretty = function
   | Nop ->
       "nop"
-  | Assign (v1, (Binop (Add, Var v2, IntLit 1))) when v1 = v2 ->
+  | Assign (v1, Binop (Add, Var v2, IntLit 1))
+    when v1 = v2 ->
       mkstr "%s++"
         (var_pretty v1)
   | Assign (v, e) ->
@@ -271,8 +234,12 @@ let rec instr_pretty = function
         (expr_pretty e)
   | Assume e ->
       expr_pretty e
-  | Code cp ->
-      code_param_pretty cp
+  | Code (c, []) ->
+      c
+  | Code (c, scs) ->
+      scs |> List.map side_cond_pretty
+          |> String.concat ", "
+          |> mkstr "%s where %s" c
 
 (* AST utilities *)
 
@@ -316,6 +283,28 @@ let instr_vars = function
 
 (* CFG utilities *)
 
+let mknode () =
+  { nid = tock ()
+  ; in_edges  = []
+  ; out_edges = []
+  }
+
+let add_in_edge e n =
+  n.in_edges <- e :: n.in_edges
+
+let add_out_edge e n =
+  n.out_edges <- e :: n.out_edges
+
+let add_edge m n i =
+  let e =
+    { instr = i
+    ; src   = m
+    ; snk   = n
+    }
+  in
+  add_in_edge  e n;
+  add_out_edge e m
+
 let cfg_edges g =
   let marks = ref [] in
   let edges = ref [] in
@@ -348,8 +337,17 @@ let cfg_nodes g =
     |> List.flatten
     |> Common.uniq
 
+let nid n =
+  n.nid
+
 let edge_instr e =
   e.instr
+
+let preds n =
+  List.map (fun e -> e.src) n.in_edges
+
+let succs n =
+  List.map (fun e -> e.snk) n.out_edges
 
 let pred_instrs n =
   List.map edge_instr n.in_edges
@@ -357,41 +355,11 @@ let pred_instrs n =
 let succ_instrs n =
   List.map edge_instr n.out_edges
 
-let mknode () =
-  { nid = tock ()
-  ; in_edges  = []
-  ; out_edges = []
-  }
-
-let add_in_edge e n =
-  n.in_edges <- e :: n.in_edges
-
-let add_out_edge e n =
-  n.out_edges <- e :: n.out_edges
-
-let add_edge m n i =
-  let e =
-    { instr = i
-    ; src   = m
-    ; snk   = n
-    }
-  in
-  add_in_edge  e n;
-  add_out_edge e m
-
-let succs n =
-  List.map
-    (fun e -> e.snk)
-    n.out_edges
-
 let entry n =
   n.in_edges = []
 
 let exit n =
   n.out_edges = []
-
-let nid n =
-  n.nid
 
 let entries g =
   g |> cfg_nodes
@@ -485,12 +453,13 @@ let path_edge_str e =
     (instr_pretty e.instr)
 
 let path_str p =
-  p |> path_edges
-    |> List.map path_edge_str
-    |> String.concat "\n"
-    |> fun s ->
-         mkstr "%s\n  %2d" s (Common.last p).nid
-
+  mkstr "%s\n  %2d"
+    (p |> path_edges
+       |> List.map path_edge_str
+       |> String.concat "\n")
+    (p |> Common.last
+       |> nid)
+  
 (* line tracking for rewrite lexer and parser *)
 
 let line =

@@ -264,10 +264,12 @@ let z3 axioms query =
   Common.readlines f1 = [ "1: Valid." ]
 
 let valid axioms form =
-  let v =
+  let q =
     form |> simplify
          |> form_simp
-         |> z3 axioms
+  in
+  let v =
+    z3 axioms q
   in
   if Flags.get "interactive" <> "true" then
     v
@@ -275,10 +277,10 @@ let valid axioms form =
     printlns
       [ ""
       ; ""
-      ; form_simp form
+      ; q
       ; ""
       ; ""
-      ; mkstr "z3 says \"%b\"." v
+      ; mkstr "z3 says '%b'." v
       ; "Do you agree? "
       ];
     if read_line () = "no" then

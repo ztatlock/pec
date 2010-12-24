@@ -2,9 +2,7 @@
 
 open ZPervasives
 
-(* common representation for all inference and checking passes
- * should live in Prog but causes circular module dependencies
- *)
+(* common representation for all inference and checking passes *)
 
 type rewrite =
   { cfgl  : Prog.cfg

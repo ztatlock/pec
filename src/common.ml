@@ -31,12 +31,14 @@ let xprod ls rs =
 let split re =
   Str.split (Str.regexp re)
 
+(* append value v to list l until l's length is >= n *)
 let rec pad v n l =
   if List.length l < n then
     pad v n (l @ [v])
   else
     l
 
+(* format two strings side-by-side, line-by-line *)
 let side_by_side sl sr =
   let lnsl, lnsr =
     split "\n" sl,
