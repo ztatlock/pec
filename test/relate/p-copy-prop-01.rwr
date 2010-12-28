@@ -6,12 +6,12 @@ stmt s
 ---
 
 x = e where noread(x);
-S where nowrite(x), noaffect(e);
+s where nowrite(x), noaffect(e);
 y = e;
 
 +++
 
 x = e;
-S;
+s;
 y = x;
 

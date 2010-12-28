@@ -7,12 +7,12 @@ stmt s
 
 x = e;
    # invalid without these side conditions
-S; # where nowrite(x), noaffect(e);
+s; # where nowrite(x), noaffect(e);
 y = e;
 
 +++
 
 x = e;
-S;
+s;
 y = x;
 

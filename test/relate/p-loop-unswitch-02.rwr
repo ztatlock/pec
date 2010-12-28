@@ -1,0 +1,28 @@
+orig I
+orig N
+expr E
+stmt S1
+stmt S2
+
+---
+
+for(I=0; I<N; I++) {
+  if(E where noread(I)) {
+    S1 where noaffect(E);
+  } else {
+    S2 where noaffect(E);
+  }
+}
+
++++
+
+if(E) {
+  for(I=0; I<N; I++) {
+    S1;
+  }
+} else {
+  for(I=0; I<N; I++) {
+    S2;
+  }
+}
+
