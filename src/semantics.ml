@@ -1,4 +1,3 @@
-
 open ZPervasives
 open Logic
 
@@ -6,10 +5,11 @@ let pvar = function
   | Prog.Orig v -> func "Orig" [var v]
   | Prog.Temp v -> func "Temp" [var v]
 
-let lkup s v   = func "lkup" [s; v]
-let eval s e   = func "eval" [s; e]
-let step s i   = func "step" [s; i]
-let assign v e = func "Assign" [v; e]
+let lkup s v     = func "lkup" [s; v]
+let eval s e     = func "eval" [s; e]
+let step s i     = func "step" [s; i]
+let assign v e   = func "Assign" [v; e]
+let noread s e v = pred "noread" [s; e; v]
 
 (* evaluating expressions
  *
@@ -24,9 +24,12 @@ let assign v e = func "Assign" [v; e]
 (* handle expression parameter side conditions *)
 let apply_esc s e = function
   | Prog.NoRead v ->
+(*
       forall ["val"]
         (eq (eval (state s) (var e))
             (eval (step (state s) (assign (pvar v) (var "val"))) (var e)))
+*)
+      noread (state s) (var e) (pvar v)
   | _ as sc ->
       sc |> Prog.side_cond_pretty
          |> mkstr "Bogus expression side cond '%s'"
@@ -134,40 +137,80 @@ let step_path p s =
     |> fun (s, lns) -> (s, List.rev lns)
 
 let vars_distinct (l, r) =
-  let vl, vr =
-    Prog.path_vars l,
-    Prog.path_vars r
-  in
-  (vl @ vr) |> Common.uniq
-            |> List.map pvar
-            |> pred "DISTINCT"
+  Prog.path_vars l @
+  Prog.path_vars r
+    |> Common.uniq
+    |> List.map pvar
+    |> pred "DISTINCT"
 
-(* TODO encode axioms below in the logic, not strings *)
+(* background for reasoning about program executions *)
+(* TODO encode in logic, not strings                 *)
 
-(* step axioms *)
+let pd_state_equiv =
+  [ "(DEFPRED (state_equiv state1 state2)"
+  ; "  (FORALL (var)"
+  ; "    (EQ (lkup state1 var)"
+  ; "        (lkup state2 var)))"
+  ; ")"
+  ]
 
-let step_assign_var_eq =
+let pd_noread =
+  [ "(DEFPRED (noread state expr var)"
+  ; "  (FORALL (val)"
+  ; "      (EQ (eval state expr)"
+  ; "          (eval (step state (Assign var val)) expr)))"
+  ; ")"
+  ]
+
+let preds =
+  [ pd_state_equiv
+  ; pd_noread
+  ]
+  |> List.map (String.concat "\n")
+  |> String.concat "\n\n"
+
+let ax_step_assign_var_eq =
   [ "(FORALL (state var expr)"
   ; "  (EQ (lkup (step state (Assign var expr)) var)"
   ; "      expr))"
   ]
 
-let step_assign_var_neq =
+let ax_step_assign_var_neq =
   [ "(FORALL (state var1 var2 expr)"
   ; "  (IMPLIES (NEQ var1 var2)"
   ; "           (EQ (lkup (step state (Assign var1 expr)) var2)"
   ; "               (lkup state var2))))"
   ]
 
-(* unop axioms *)
+(* z3 can prove, but assuming aids proof search *)
+let ax_step_state_equiv =
+  [ "(FORALL (state var)"
+  ; "  (state_equiv state"
+  ; "               (step state (Assign var (lkup state var)))))"
+  ]
+
+let ax_eval_equiv =
+  [ "(FORALL (state1 state2 expr)"
+  ; "  (IMPLIES (state_equiv state1 state2)"
+  ; "           (EQ (eval state1 expr)"
+  ; "               (eval state2 expr))))"
+  ]
+
+(* TODO change EQ to state_equiv ? *)
+let ax_eval_noread =
+  [ "(FORALL (state1 state2 expr var val)"
+  ; "  (IMPLIES"
+  ; "    (AND (EQ state2 (step state1 (Assign var val)))"
+  ; "         (noread state2 expr var))"
+  ; "    (EQ (eval state1 expr)"
+  ; "        (eval state2 expr))))"
+  ]
 
 let ax_not =
   [ "(FORALL (expr)"
   ; "  (IMPLIES (NEQ 0 (Not expr))"
   ; "           (EQ  0 expr)))"
   ]
-
-(* binop axioms *)
 
 let ax_add =
   [ "(FORALL (expr1 expr2)"
@@ -241,11 +284,14 @@ let ax_not_gte_lt =
   ; "      (Lt expr1 expr2)))"
   ]
 
-(* all our assumptions *)
-
 let axioms =
-  [ step_assign_var_eq
-  ; step_assign_var_neq
+  [ ax_step_assign_var_eq
+  ; ax_step_assign_var_neq
+  (*
+  ; ax_step_state_equiv
+  ; ax_eval_equiv
+  *)
+  ; ax_eval_noread
   ; ax_not
   ; ax_add
   ; ax_sub
@@ -263,5 +309,17 @@ let axioms =
   |> List.map (String.concat "\n  ")
   |> List.map (mkstr "(BG_PUSH\n  %s\n)")
   |> String.concat "\n\n"
-  |> mkstr ";; begin axioms\n\n%s\n\n;; end axioms\n\n"
+
+let background =
+  String.concat "\n"
+    [ ";; PREDICATE DEFINITIONS"
+    ; ""
+    ; preds
+    ; ""
+    ; ";; SEMANTICS"
+    ; ""
+    ; axioms
+    ; ""
+    ; ";; END BACKGROUND"
+    ]
 

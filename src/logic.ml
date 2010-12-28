@@ -140,18 +140,26 @@ let rec form_simp = function
         ; form_simp b
         ; ")"
         ]
-  | Forall (vs, po, f) ->
+  | Forall (vs, None, f) ->
       let v =
         String.concat " " vs
       in
-      let p =
-        match po with
-        | Some t -> term_simp t
-        | None   -> ""
+      String.concat "\n\n"
+        [ mkstr "(FORALL (%s)" v
+        ; form_simp f
+        ; ")"
+        ]
+  | Forall (vs, Some p, f) ->
+      let v =
+        String.concat " " vs
+      in
+      let pat =
+        p |> term_simp
+          |> mkstr "(PATS %s)" 
       in
       String.concat "\n\n"
         [ mkstr "(FORALL (%s)" v
-        ; mkstr "(PATS %s)" p
+        ; pat
         ; form_simp f
         ; ")"
         ]
