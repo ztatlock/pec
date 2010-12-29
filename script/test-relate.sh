@@ -21,7 +21,7 @@ function check {
 
 for t in $TEST; do
   nm=$(basename $t .rwr)
-  printf "%-20s " $nm
+  printf "%-30s " $nm
   if check $t $nm; then
     echo $PASS
   else
