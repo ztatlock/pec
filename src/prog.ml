@@ -20,6 +20,11 @@ type var =
  * able to apply when it would actually be valid. This is because the execution
  * engine has to prove that Temp locations are dead at the end of the
  * transformed region.
+ *
+ * Temp vars cannot be matched into code or expression parameters. This is
+ * because our semantics assumes that "orig equivalence" is preserved by
+ * stepping code parameters and that evaluating an expression parameter depends
+ * only on orig vars.
  *)
 
 type side_cond =

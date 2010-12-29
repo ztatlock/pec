@@ -273,6 +273,6 @@ let z3 query =
 let valid prelude form =
   form |> simplify
        |> form_simp
-       |> mkstr "%s\n%s\n" prelude
+       |> mkstr "%s\n\n%s\n" prelude
        |> z3
 
