@@ -1,0 +1,22 @@
+expr E
+stmt S1
+stmt S2
+
+---
+
+assume(E);
+while(E) {
+  S1; 
+  S2 where noaffect(E);
+}
+
++++
+
+S1;
+while(E) {
+  # swap statement order
+  S1;
+  S2;
+}
+S2;
+

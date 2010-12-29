@@ -1,0 +1,28 @@
+orig i
+expr e
+stmt S1
+stmt S2
+
+---
+
+assume(e > 0);
+i = 0;
+# omit side cond on expr
+while(i < e) {
+  S1;
+  S2 where nowrite(i), noaffect(e);
+  i++;
+}
+
++++
+
+i = 0;
+S1;
+while(i < e - 1) {
+  S2;
+  i++;
+  S1;
+}
+S2;
+i++;
+
