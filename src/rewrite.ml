@@ -4,11 +4,14 @@ open ZPervasives
 
 (* common representation for all inference and checking passes *)
 
+type simrel =
+  ((Prog.node * Prog.node) * Logic.form) list
+
 type rewrite =
   { cfgl  : Prog.cfg
   ; cfgr  : Prog.cfg
   ; paths : (Prog.path * Prog.path) list
-  ; mutable simrel : Logic.simrel
+  ; mutable simrel : simrel
   }
 
 let mk_rewrite (l, r) =
@@ -78,7 +81,9 @@ let log_paths rwr =
 
 let simrel_entry_str ((l, r), f) =
   mkstr "  %2d %2d : %s"
-    l.Prog.nid r.Prog.nid (Logic.form_simp f)
+    l.Prog.nid
+    r.Prog.nid
+    (Logic.form_simp f)
 
 let log_simrel rwr =
   Common.log ">>> Init Simrel";
@@ -87,7 +92,7 @@ let log_simrel rwr =
     |> String.concat "\n"
     |> Common.log
 
-(* dumping dot repr *)
+(* dot repr *)
 
 let color_ctr =
   ref 0
@@ -170,14 +175,11 @@ let dot_str rwr =
     ]
 
 let write_dot rwr =
-  let f = Flags.get "dot" in
-  if f <> "" then
-    rwr |> dot_str
-        |> Common.str_file f
-
-let log rwr =
-  rwr |> ff log_cfgs
-      |> ff log_paths
-      |> ff log_simrel
-      |> ff write_dot
+  let f =
+    "scratch"
+      |> Flags.get
+      |> mkstr "%s/pec-rwr.dot"
+  in
+  rwr |> dot_str
+      |> Common.str_file f
 

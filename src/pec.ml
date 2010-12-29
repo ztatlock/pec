@@ -2,53 +2,40 @@ open ZPervasives
 
 let usage () =
   printlns
-    [ "Usage: pec [options] <file>                                  "
-    ; "                                                             "
-    ; "Automatically check correctness of rewrite rule in <file>.   "
-    ; "                                                             "
-    ; "OPTIONS:                                                     "
-    ; "  -d, --dot <file>         dump CFG dot to file              "
-    ; "  -h, --help               display this usage information    "
-    ; "  -i, --interactive        let user play theorem prover      "
-    ; "  -l, --log <file>         dump log to file                  "
-    ; "  -s, --strength N         limit simrel strengthenings to N  "
-    ; "                                                             "
+    [ "Usage: pec [options] <file>                                "
+    ; "                                                           "
+    ; "Automatically check correctness of rewrite rule in <file>. "
+    ; "                                                           "
+    ; "OPTIONS:                                                   "
+    ; "  -s, --scratch <dir>    space for log, dot, z3 queries    "
+    ; "  -n, --nstrength N      limit simrel strengthenings to N  "
+    ; "  -h, --help             display this usage information    "
+    ; "                                                           "
     ];
   exit 1
 
 let parse_args () =
-  let n = Array.length Sys.argv in
-  let rec loop i =
-    if i < n then
-      match Sys.argv.(i) with
-      | "-d" | "--dot" ->
-          if i + 1 < n then begin
-            Flags.set "dot" Sys.argv.(i + 1);
-            loop (i + 2)
-          end else
-            usage ()
-      | "-h" | "--help" ->
-          usage ()
-      | "-i" | "--interactive" ->
-          Flags.set "interactive" "true";
-          loop (i + 1)
-      | "-l" | "--log" ->
-          if i + 1 < n then begin
-            Flags.set "log" Sys.argv.(i + 1);
-            loop (i + 2)
-          end else
-            usage ()
-      | "-s" | "--strength" ->
-          if i + 1 < n then begin
-            Flags.set "strength" Sys.argv.(i + 1);
-            loop (i + 2)
-          end else
-            usage ()
-      | _ as a ->
-          Flags.set "input" a;
-          loop (i + 1)
+  let rec loop = function
+    | "-s"        :: d :: t
+    | "--scratch" :: d :: t ->
+        Flags.set "scratch" d;
+        loop t
+    | "-n"          :: n :: t
+    | "--nstrength" :: n :: t ->
+        Flags.set "nstrength" n;
+        loop t
+    | "-h"     :: t
+    | "--help" :: t ->
+        usage ()
+    | i :: t ->
+        Flags.set "input" i;
+        loop t
+    | [] ->
+        ()
   in
-  loop 1
+  Sys.argv
+    |> Array.to_list
+    |> loop
 
 let main () =
   parse_args ();
@@ -56,9 +43,12 @@ let main () =
    "input"
       |> Flags.get
       |> Rewrite.parse
+      |> ff Rewrite.log_cfgs
       |> Synch.infer
+      |> ff Rewrite.log_paths
       |> SimRel.infer
-      |> Rewrite.log
+      |> ff Rewrite.log_simrel
+      |> ff Rewrite.write_dot
       |> Check.check
   then
     print "VALID\n"
@@ -66,6 +56,7 @@ let main () =
     print "INVALID\n"
 
 let _ =
-  () |> main
-     |> Common.write_log
+  (* always write out log *)
+  at_exit Common.write_log;
+  main ()
 

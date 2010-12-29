@@ -16,12 +16,9 @@ let get f =
 (* default flag settings *)
 
 let _ =
-  [ "dot"         , ""
-  ; "interactive" , "false"
-  ; "input"       , ""
-  ; "log"         , ""
-  ; "strength"    , "10"
+  [ "scratch"   , "/tmp"
+  ; "nstrength" , "10"
+  ; "input"     , ""
   ]
-  |> List.split
-  |> uncurry (List.iter2 set)
+  |> List.iter (uncurry set)
 

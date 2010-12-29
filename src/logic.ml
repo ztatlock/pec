@@ -23,9 +23,6 @@ type form =
   (* forall term option represents firing pattern *)
   | Forall of string list * term option * form
 
-type simrel =
-  ((Prog.node * Prog.node) * form) list
-
 (* curried constructors *)
 let var v         = Var v
 let state s       = State s
@@ -100,7 +97,7 @@ let form_states_nostart f =
     |> List.filter (fun s -> s <> start_l)
     |> List.filter (fun s -> s <> start_r)
 
-(* simplify repr, essentially sexprs *)
+(* Simplify repr, essentially sexprs *)
 
 let state_simp = function
   | L i -> mkstr "l%d" i
@@ -261,45 +258,21 @@ let rec simplify f1 =
 
 (* dispatch atp query *)
 
-(* TODO : tighten this interface        *)
-(*   use fresh I/O files for each query *)
-(*   check process result               *)
-let z3 axioms query =
+let z3 query =
   let f0, f1 =
-    "/tmp/z3-input",
-    "/tmp/z3-output"
+    mkstr "%s/z3-input"  (Flags.get "scratch"),
+    mkstr "%s/z3-output" (Flags.get "scratch")
   in
-  Common.str_file f0 (axioms ^ "\n\n" ^ query);
-  (* run z3 on input f0 and send output to f1 *)
+  (* run z3 on input f0, send output to f1, check result *)
+  Common.str_file f0 query;
   mkstr "z3 -s %s > %s" f0 f1
     |> Unix.system
     |> ignore;
-  (* check result *)
-  Common.readlines f1 = [ "1: Valid." ]
+  Common.file_str f1 = "1: Valid."
 
-let valid axioms form =
-  let q =
-    form |> simplify
-         |> form_simp
-  in
-  let v =
-    z3 axioms q
-  in
-  if Flags.get "interactive" <> "true" then
-    v
-  else begin
-    printlns
-      [ ""
-      ; ""
-      ; q
-      ; ""
-      ; ""
-      ; mkstr "z3 says '%b'." v
-      ; "Do you agree? "
-      ];
-    if read_line () = "no" then
-      not v
-    else
-      v
-  end
+let valid prelude form =
+  form |> simplify
+       |> form_simp
+       |> mkstr "%s\n%s\n" prelude
+       |> z3
 

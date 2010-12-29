@@ -54,7 +54,7 @@ let side_by_side sl sr =
   in
   let lns =
     List.map2
-      (mkstr "%-35s%s")
+      (mkstr "%-40s%s")
       lnsl
       lnsr
   in
@@ -93,10 +93,13 @@ let log msg =
   logbuf := msg :: !logbuf
 
 let write_log () =
-  let f = Flags.get "log" in
-  if f <> "" then
-    !logbuf
-      |> List.rev
-      |> String.concat "\n\n"
-      |> str_file f
+  let f =
+    "scratch"
+      |> Flags.get
+      |> mkstr "%s/pec-log"
+  in
+  !logbuf
+    |> List.rev
+    |> String.concat "\n\n"
+    |> str_file f
 

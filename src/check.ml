@@ -48,8 +48,8 @@ let reset_nstrength () =
 
 let too_strong () =
   let n =
-    "strength" |> Flags.get
-               |> int_of_string
+    "nstrength" |> Flags.get
+                |> int_of_string
   in
   !nstrength > n
 
