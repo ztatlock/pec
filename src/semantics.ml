@@ -156,9 +156,9 @@ let pd_state_equiv =
 
 let pd_orig_equiv =
   [ "(DEFPRED (orig_equiv state1 state2)"
-  ; "  (FORALL (var)"
-  ; "    (EQ (lkup state1 (Orig var))"
-  ; "        (lkup state2 (Orig var))))"
+  ; "  (FORALL (id)"
+  ; "    (EQ (lkup state1 (Orig id))"
+  ; "        (lkup state2 (Orig id))))"
   ; ")"
   ]
 
@@ -178,6 +178,11 @@ let preds =
   |> List.map (String.concat "\n")
   |> String.concat "\n\n"
 
+let ax_orig_temp_neq =
+  [ "(FORALL (x y)"
+  ; "  (NEQ (Orig x) (Temp y)))"
+  ]
+
 let ax_step_assign_var_eq =
   [ "(FORALL (state var expr)"
   ; "  (EQ (lkup (step state (Assign var expr)) var)"
@@ -189,13 +194,6 @@ let ax_step_assign_var_neq =
   ; "  (IMPLIES (NEQ var1 var2)"
   ; "           (EQ (lkup (step state (Assign var1 expr)) var2)"
   ; "               (lkup state var2))))"
-  ]
-
-(* z3 can prove, but assuming aids proof search *)
-let ax_step_state_equiv =
-  [ "(FORALL (state var)"
-  ; "  (state_equiv state"
-  ; "               (step state (Assign var (lkup state var)))))"
   ]
 
 let ax_eval_equiv =
@@ -294,12 +292,10 @@ let ax_not_gte_lt =
   ]
 
 let axioms =
-  [ ax_step_assign_var_eq
+  [ ax_orig_temp_neq
+  ; ax_step_assign_var_eq
   ; ax_step_assign_var_neq
-  (*
-  ; ax_step_state_equiv
   ; ax_eval_equiv
-  *)
   ; ax_eval_noread
   ; ax_not
   ; ax_add
@@ -321,7 +317,7 @@ let axioms =
 
 let background =
   String.concat "\n"
-    [ ";; PREDICATE DEFINITIONS"
+    [ ";; PREDICATES"
     ; ""
     ; preds
     ; ""
