@@ -52,7 +52,7 @@ let guess_invariant np =
   if entry np then
     Logic.state_eq
   else if exit np then
-    Logic.state_eq
+    Logic.orig_equiv
   else if invalid np then
     Logic.False
   else if neq_code_params np then

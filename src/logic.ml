@@ -49,6 +49,12 @@ let state_eq =
   eq (state start_l)
      (state start_r)
 
+let orig_equiv =
+  pred "orig_equiv"
+    [ state start_l
+    ; state start_r
+    ]
+
 (* list all the states mentioned in a formula *)
 
 let rec term_states = function

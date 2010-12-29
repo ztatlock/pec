@@ -154,6 +154,14 @@ let pd_state_equiv =
   ; ")"
   ]
 
+let pd_orig_equiv =
+  [ "(DEFPRED (orig_equiv state1 state2)"
+  ; "  (FORALL (var)"
+  ; "    (EQ (lkup state1 (Orig var))"
+  ; "        (lkup state2 (Orig var))))"
+  ; ")"
+  ]
+
 let pd_noread =
   [ "(DEFPRED (noread state expr var)"
   ; "  (FORALL (val)"
@@ -164,6 +172,7 @@ let pd_noread =
 
 let preds =
   [ pd_state_equiv
+  ; pd_orig_equiv
   ; pd_noread
   ]
   |> List.map (String.concat "\n")
