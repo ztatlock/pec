@@ -1,15 +1,13 @@
 open ZPervasives
 open Logic
 
-let pvar = function
-  | Prog.Orig v -> func "Orig" [var v]
-  | Prog.Temp v -> func "Temp" [var v]
-
-let lkup s v     = func "lkup" [s; v]
-let eval s e     = func "eval" [s; e]
-let step s i     = func "step" [s; i]
-let assign v e   = func "Assign" [v; e]
-let noread s e v = pred "noread" [s; e; v]
+let lkup s v       = func "lkup" [state s; pvar v]
+let eval s e       = func "eval" [state s; pexpr e]
+let step s i       = func "step" [state s; i]
+let assign v e     = func "Assign" [pvar v; e]
+let noread s e v   = pred "noread" [state s; pexpr e; pvar v]
+let nowrite s c v  = pred "nowrite" [state s; pcode c; pvar v]
+let noaffect s c e = pred "noaffect" [state s; pcode c; pexpr e]
 
 (* evaluating expressions
  *
@@ -24,12 +22,7 @@ let noread s e v = pred "noread" [s; e; v]
 (* handle expression parameter side conditions *)
 let apply_esc s e = function
   | Prog.NoRead v ->
-(*
-      forall ["val"]
-        (eq (eval (state s) (var e))
-            (eval (step (state s) (assign (pvar v) (var "val"))) (var e)))
-*)
-      noread (state s) (var e) (pvar v)
+      noread s e v
   | _ as sc ->
       sc |> Prog.side_cond_pretty
          |> mkstr "Bogus expression side cond '%s'"
@@ -41,7 +34,7 @@ let rec eval_expr s = function
       , []
       )
   | Prog.Var v ->
-      ( lkup (state s) (pvar v)
+      ( lkup s v
       , []
       )
   | Prog.Unop (o, e) ->
@@ -60,7 +53,7 @@ let rec eval_expr s = function
       , scsl @ scsr
       )
   | Prog.Expr (e, scs) ->
-      ( eval (state s) (var e)
+      ( eval s e
       , List.map (apply_esc s e) scs
       )
 
@@ -75,13 +68,11 @@ let rec eval_expr s = function
  *)
 
 (* handle code parameter side conditions *)
-let apply_csc s1 s2 c = function
+let apply_csc s c = function
   | Prog.NoWrite v ->
-      eq (lkup (state s1) (pvar v))
-         (lkup (state s2) (pvar v))
+      nowrite s c v
   | Prog.NoAffect e ->
-      eq (eval (state s1) (var e))
-         (eval (state s2) (var e))
+      noaffect s c e
   | _ as sc ->
       sc |> Prog.side_cond_pretty
          |> mkstr "Bogus code side cond '%s'"
@@ -101,8 +92,7 @@ let step_instr (s1, links) = function
       in
       let ln =
         eq (state s2)
-           (step (state s1)
-                 (assign (pvar pv) v))
+           (step s1 (assign pv v))
       in
       ( s2
       , scs @ ln :: links
@@ -121,10 +111,10 @@ let step_instr (s1, links) = function
       let s2 = next_state s1 in
       let ln =
         eq (state s2)
-           (step (state s1) (var c))
+           (step s1 (pcode c))
       in
       let sclns =
-        List.map (apply_csc s1 s2 c) scs
+        List.map (apply_csc s1 c) scs
       in
       ( s2
       , sclns @ ln :: links
@@ -144,7 +134,6 @@ let vars_distinct (l, r) =
     |> pred "DISTINCT"
 
 (* background for reasoning about program executions *)
-(* TODO encode in logic, not strings                 *)
 
 let pd_state_equiv =
   [ "(DEFPRED (state_equiv state1 state2)"
@@ -170,10 +159,26 @@ let pd_noread =
   ; ")"
   ]
 
+let pd_nowrite =
+  [ "(DEFPRED (nowrite state stmt var)"
+  ; "  (EQ (lkup state var)"
+  ; "      (lkup (step state stmt) var))"
+  ; ")"
+  ]
+
+let pd_noaffect =
+  [ "(DEFPRED (noaffect state stmt expr)"
+  ; "  (EQ (eval state expr)"
+  ; "      (eval (step state stmt) expr))"
+  ; ")"
+  ]
+
 let preds =
   [ pd_state_equiv
   ; pd_orig_equiv
   ; pd_noread
+  ; pd_nowrite
+  ; pd_noaffect
   ]
   |> List.map (String.concat "\n")
   |> String.concat "\n\n"
@@ -181,6 +186,20 @@ let preds =
 let ax_orig_temp_neq =
   [ "(FORALL (x y)"
   ; "  (NEQ (Orig x) (Temp y)))"
+  ]
+
+let ax_code_pres_temp =
+  [ "(FORALL (state stmt var)"
+  ; "  (EQ (lkup state (Temp var))"
+  ; "      (lkup (step state (PCode stmt)) (Temp var))))"
+  ]
+
+let ax_pres_orig_equiv =
+  [ "(FORALL (state1 state2 stmt)"
+  ; "  (IMPLIES"
+  ; "    (orig_equiv state1 state2)"
+  ; "    (orig_equiv (step state1 stmt)"
+  ; "                (step state2 stmt))))"
   ]
 
 let ax_step_assign_var_eq =
@@ -201,6 +220,19 @@ let ax_eval_equiv =
   ; "  (IMPLIES (state_equiv state1 state2)"
   ; "           (EQ (eval state1 expr)"
   ; "               (eval state2 expr))))"
+  ]
+
+let ax_eval_expr_param_orig_equiv =
+  [ "(FORALL (state1 state2 expr)"
+  ; "  (IMPLIES (orig_equiv state1 state2)"
+  ; "           (EQ (eval state1 (PExpr expr))"
+  ; "               (eval state2 (PExpr expr)))))"
+  ]
+
+let ax_eval_expr_param_temp =
+  [ "(FORALL (state expr var val)"
+  ; "  (EQ (eval state (PExpr expr))"
+  ; "      (eval (step state (Assign (Temp var) val)) (PExpr expr))))"
   ]
 
 (* TODO change EQ to state_equiv ? *)
@@ -293,9 +325,13 @@ let ax_not_gte_lt =
 
 let axioms =
   [ ax_orig_temp_neq
+  ; ax_code_pres_temp
+  ; ax_pres_orig_equiv
   ; ax_step_assign_var_eq
   ; ax_step_assign_var_neq
   ; ax_eval_equiv
+  ; ax_eval_expr_param_orig_equiv
+  ; ax_eval_expr_param_temp
   ; ax_eval_noread
   ; ax_not
   ; ax_add
@@ -326,5 +362,6 @@ let background =
     ; axioms
     ; ""
     ; ";; END BACKGROUND"
+    ; ""
     ]
 

@@ -5,10 +5,12 @@ type state =
   | L of int
   | R of int
 
-(* TODO add program var term *)
 type term =
   | Int   of int
   | Var   of string
+  | PVar  of Prog.var
+  | PExpr of string
+  | PCode of string
   | State of state
   | Func  of string * term list
 
@@ -25,6 +27,9 @@ type form =
 
 (* curried constructors *)
 let var v         = Var v
+let pvar v        = PVar v
+let pexpr e       = PExpr e
+let pcode c       = PCode c
 let state s       = State s
 let func f args   = Func (f, args)
 let eq a b        = Eq (a, b)
@@ -56,7 +61,10 @@ let orig_equiv =
 
 let rec term_states = function
   | Int _
-  | Var _ ->
+  | Var _
+  | PVar _
+  | PExpr _
+  | PCode _ ->
       []
   | State s ->
       [s]
@@ -108,6 +116,14 @@ let rec term_simp = function
       mkstr "%d" i
   | Var v ->
       v
+  | PVar (Prog.Orig v) ->
+      mkstr "(Orig %s)" v
+  | PVar (Prog.Temp v) ->
+      mkstr "(Temp %s)" v
+  | PExpr e ->
+      mkstr "(PExpr %s)" e
+  | PCode c ->
+      mkstr "(PCode %s)" c
   | State s ->
       state_simp s
   | Func (f, args) ->
@@ -176,6 +192,9 @@ let rec replace_term t1 t2 x =
     match x with
     | Int _
     | Var _
+    | PVar _
+    | PExpr _
+    | PCode _
     | State _ ->
         x
     | Func (f, args) ->
@@ -273,6 +292,6 @@ let z3 query =
 let valid prelude form =
   form |> simplify
        |> form_simp
-       |> mkstr "%s\n\n%s\n" prelude
+       |> mkstr "%s\n%s\n" prelude
        |> z3
 
