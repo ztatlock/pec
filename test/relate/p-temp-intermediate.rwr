@@ -1,0 +1,13 @@
+temp t
+orig x
+expr E
+
+---
+
+x = E;
+
++++
+
+t = E;
+x = t;
+
