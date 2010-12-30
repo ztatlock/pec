@@ -1,0 +1,19 @@
+orig i
+orig n
+stmt S
+
+---
+
+assume(n > 0);
+for(i = 0; i < n; i++) {
+  S;
+}
+
++++
+
+i = 0;
+S;
+for(i = 1; i < n; i++) {
+  S;
+}
+

@@ -1,3 +1,4 @@
+temp t
 orig x
 orig y
 expr E1
@@ -10,22 +11,21 @@ stmt S3
 
 if(E1) {
   S1;
-          # omit side cond
-  x = E2; # where noread(x);
-  S2 where nowrite(x), noaffect(E2);
+  x = E2 where noread(x);
+  S2 where noaffect(E2);
 } else {
   S3;
 }
-
 y = E2;
 
 +++
 
 if(E1) {
   S1;
-  x = E2;
+  t = E2;
+  x = t;
   S2;
-  y = x;
+  y = t;
 } else {
   S3;
   y = E2;
