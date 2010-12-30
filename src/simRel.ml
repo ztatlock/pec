@@ -21,7 +21,7 @@ module GuessOrigEquiv = struct
     Logic.orig_equiv
 end
 
-module Guess0 = struct
+module Nostradamus = struct
   let neq_code_params (l, r) =
     let il, ir =
       Prog.succ_instrs l,
@@ -34,6 +34,25 @@ module Guess0 = struct
     | _ ->
         false
 
+  let assigns_temp_instr = function
+    | Prog.Assign (Prog.Temp _, _) -> true
+    | _ -> false
+
+  let assigns_temp n =
+    n |> Prog.succ_instrs
+      |> List.exists assigns_temp_instr
+
+  let ancestor_assigns_temp n =
+    n |> Prog.ancestors
+      |> List.exists assigns_temp
+
+  let guess_eq (l, r) =
+    if ancestor_assigns_temp l 
+    || ancestor_assigns_temp r then
+      Logic.orig_equiv
+    else
+      Logic.state_eq
+
   let recent_assume s n =
     match Prog.pred_instrs n with
     | [Prog.Assume c] ->
@@ -45,8 +64,7 @@ module Guess0 = struct
 
   let recent_assumes (l, r) =
     Logic.conj
-      [ Logic.state_eq
-      ; recent_assume Logic.start_l l
+      [ recent_assume Logic.start_l l
       ; recent_assume Logic.start_r r
       ]
 
@@ -54,11 +72,13 @@ module Guess0 = struct
     if neq_code_params np then
       Logic.False
     else
-      recent_assumes np
+      Logic.conj
+        [ guess_eq np
+        ; recent_assumes np
+        ]
 end
 
 module GenRel(Guesser: GUESSER) = struct
-
   let synch_points paths =
     let ens, exs =
       List.map (pair_map List.hd)     paths,
@@ -93,7 +113,7 @@ module GenRel(Guesser: GUESSER) = struct
         |> List.map guess_entry
 end
 
-module GR = GenRel(Guess0)
+module GR = GenRel(Nostradamus)
 
 let infer rwr =
   rwr |> GR.generate
