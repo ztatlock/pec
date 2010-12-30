@@ -56,7 +56,7 @@ let too_strong () =
 let strengthen rwr pp obl =
   incr nstrength;
   let en = pair_map List.hd pp in
-  if SimRel.entry en || too_strong () then
+  if pair_for_all Prog.entry en || too_strong () then
     raise GiveUp
   else
     (* universally quantify over old obl states *)
