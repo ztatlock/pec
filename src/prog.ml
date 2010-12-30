@@ -310,6 +310,24 @@ let add_edge m n i =
   add_in_edge  e n;
   add_out_edge e m
 
+let nid n =
+  n.nid
+
+let edge_instr e =
+  e.instr
+
+let preds n =
+  List.map (fun e -> e.src) n.in_edges
+
+let succs n =
+  List.map (fun e -> e.snk) n.out_edges
+
+let pred_instrs n =
+  List.map edge_instr n.in_edges
+
+let succ_instrs n =
+  List.map edge_instr n.out_edges
+
 let cfg_edges g =
   let marks = ref [] in
   let edges = ref [] in
@@ -342,23 +360,29 @@ let cfg_nodes g =
     |> List.flatten
     |> Common.uniq
 
-let nid n =
-  n.nid
-
-let edge_instr e =
-  e.instr
-
-let preds n =
-  List.map (fun e -> e.src) n.in_edges
-
-let succs n =
-  List.map (fun e -> e.snk) n.out_edges
-
-let pred_instrs n =
-  List.map edge_instr n.in_edges
-
-let succ_instrs n =
-  List.map edge_instr n.out_edges
+let ancestors n =
+  let marks =
+    ref []
+  in
+  let marked n =
+    List.mem
+      n.nid
+      (List.map nid !marks)
+  in
+  let unmarked n =
+    not (marked n)
+  in
+  let mark n =
+    marks := n :: !marks
+  in
+  let rec crawl n =
+    n |> preds
+      |> List.filter unmarked
+      |> ff (List.map mark)
+      |> List.iter crawl
+  in
+  crawl n;
+  List.rev !marks
 
 let entry n =
   n.in_edges = []
