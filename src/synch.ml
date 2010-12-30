@@ -6,21 +6,19 @@ module type SKIPPER = sig
   val skip : Prog.node -> bool
 end
 
-module DefaultSkipper = struct
-  (* stop before code parameters *)
+module SkipAll = struct
+  let skip n =
+    true
+end
+
+module SkipNonCode = struct
   let skip_instr = function
     | Prog.Code _ -> false
-    | _ -> true
+    | _           -> true
 
   let skip n =
     n |> Prog.succ_instrs
       |> List.for_all skip_instr
-end
-
-module StraightSkipper = struct
-  (* in straightline code -- don't stop for anything *)
-  let skip n =
-    true
 end
 
 module Walker(Skipper: SKIPPER) = struct
@@ -90,8 +88,10 @@ module Walker(Skipper: SKIPPER) = struct
     get_paths ()
 end
 
-module D = Walker(DefaultSkipper)
-module S = Walker(StraightSkipper)
+module SA = Walker(SkipAll)
+module NC = Walker(SkipNonCode)
+
+(* heuristics to pick walker *)
 
 let not_branch nd =
   nd |> Prog.succs
@@ -106,14 +106,16 @@ let no_branches rwr =
   no_branches_cfg rwr.Rewrite.cfgl &&
   no_branches_cfg rwr.Rewrite.cfgr
 
+(* infer synchronized path programs *)
+
 let infer rwr =
   let walker =
     if no_branches rwr then begin
-      Common.log ">>> Using Straight Skipper";
-      S.infer
+      Common.log ">>> Using Skip All";
+      SA.infer
     end else begin
-      Common.log ">>> Using Default Skipper";
-      D.infer
+      Common.log ">>> Using Skip Non Code";
+      NC.infer
     end
   in
   rwr |> walker
