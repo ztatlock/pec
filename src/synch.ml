@@ -49,8 +49,8 @@ module Walker(Skipper: SKIPPER) = struct
 
   (* CRUCIAL force stops at CFG entries and exits *)
   let skip n =
-    not (Prog.entry n) &&
-    not (Prog.exit  n) &&
+    not (Prog.is_entry n) &&
+    not (Prog.is_exit  n) &&
     Skipper.skip n
 
   (* NOTE left and right paths are reversed     *)

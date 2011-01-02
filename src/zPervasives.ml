@@ -21,7 +21,7 @@ let snoc t h =
 let pair_map f (a, b) =
   (f a, f b)
 
-let pair_for_all f (a, b) =
+let pair_forall f (a, b) =
   f a && f b
 
 let curry f a b =

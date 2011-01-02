@@ -21,60 +21,125 @@ module GuessOrigEquiv = struct
     Logic.orig_equiv
 end
 
-module Nostradamus = struct
-  let neq_code_params (l, r) =
-    let il, ir =
-      Prog.succ_instrs l,
-      Prog.succ_instrs r
-    in
-    match il, ir with
-    | [Prog.Code (sl, _)],
-      [Prog.Code (sr, _)] ->
-        sl <> sr
-    | _ ->
-        false
+(* analyses *)
 
-  let assigns_temp_instr = function
+let exec_neq_code (l, r) =
+  match
+    Prog.succ_instrs l,
+    Prog.succ_instrs r
+  with
+  | [Prog.Code (sl, _)],
+    [Prog.Code (sr, _)] ->
+      sl <> sr
+  | _ ->
+      false
+
+(* if n's sole predecessor is Assume C then *)
+(* we know C holds in any state reaching n  *)
+let pred_assume s n =
+  match Prog.pred_instrs n with
+  | [Prog.Assume c] ->
+      c |> Semantics.eval_expr s
+        |> fst (* project out value *)
+        |> Logic.neq (Logic.Int 0)
+  | _ ->
+      Logic.True
+
+let pred_assumes (l, r) =
+  Logic.conj
+    [ pred_assume Logic.start_l l
+    ; pred_assume Logic.start_r r
+    ]
+
+let strong_post_path sN p =
+  let s0 =
+    Logic.next_state sN
+  in
+  let s, links =
+    Semantics.step_path p s0
+  in
+  if s = s0 then
+    links
+      |> List.map (Logic.replace_state s sN)
+      |> Logic.conj
+  else
+    links
+      |> List.map (Logic.replace_state s sN)
+      |> Logic.conj
+      |> Logic.exists [Logic.state_simp s0]
+
+let strong_post sN n =
+  let sticky x =
+    Prog.is_entry  x ||
+    Prog.is_branch x
+  in
+  n |> Prog.paths_near_ancs_st sticky
+    |> List.map (strong_post_path sN)
+    |> Logic.disj
+
+let strong_posts (l, r) =
+  Logic.conj
+    [ strong_post Logic.start_l l
+    ; strong_post Logic.start_r r
+    ]
+
+let ancestor_assigns_temp n =
+  let assigns_temp_i = function
     | Prog.Assign (Prog.Temp _, _) -> true
     | _ -> false
-
+  in
   let assigns_temp n =
     n |> Prog.succ_instrs
-      |> List.exists assigns_temp_instr
+      |> List.exists assigns_temp_i
+  in
+  n |> Prog.ancestors
+    |> List.exists assigns_temp
 
-  let ancestor_assigns_temp n =
-    n |> Prog.ancestors
-      |> List.exists assigns_temp
+let guess_eq (l, r) =
+  if ancestor_assigns_temp l
+  || ancestor_assigns_temp r then
+    Logic.orig_equiv
+  else
+    Logic.state_eq
 
-  let guess_eq (l, r) =
-    if ancestor_assigns_temp l 
-    || ancestor_assigns_temp r then
-      Logic.orig_equiv
+module Guess1 = struct
+  let guess np =
+    if exec_neq_code np then
+      Logic.False
     else
       Logic.state_eq
+end
 
-  let recent_assume s n =
-    match Prog.pred_instrs n with
-    | [Prog.Assume c] ->
-        c |> Semantics.eval_expr s
-          |> fst
-          |> Logic.neq (Logic.Int 0)
-    | _ ->
-        Logic.True
-
-  let recent_assumes (l, r) =
-    Logic.conj
-      [ recent_assume Logic.start_l l
-      ; recent_assume Logic.start_r r
-      ]
-
+module Guess2 = struct
   let guess np =
-    if neq_code_params np then
+    if exec_neq_code np then
+      Logic.False
+    else
+      Logic.conj
+        [ Logic.state_eq
+        ; pred_assumes np
+        ]
+end
+
+module Guess3 = struct
+  let guess np =
+    if exec_neq_code np then
       Logic.False
     else
       Logic.conj
         [ guess_eq np
-        ; recent_assumes np
+        ; pred_assumes np
+        ]
+end
+
+module Guess4 = struct
+  let guess np =
+    if exec_neq_code np then
+      Logic.False
+    else
+      Logic.conj
+        [ guess_eq np
+        ; strong_posts np
         ]
 end
 
@@ -87,13 +152,13 @@ module GenRel(Guesser: GUESSER) = struct
     Common.uniq (ens @ exs)
 
   let invalid (l, r) =
-    Prog.entry l <> Prog.entry r ||
-    Prog.exit  l <> Prog.exit  r
+    Prog.is_entry l <> Prog.is_entry r ||
+    Prog.is_exit  l <> Prog.is_exit  r
 
   let guess_invariant np =
-    if pair_for_all Prog.entry np then
+    if pair_forall Prog.is_entry np then
       Logic.state_eq
-    else if pair_for_all Prog.exit np then
+    else if pair_forall Prog.is_exit np then
       Logic.orig_equiv
     else if invalid np then
       Logic.False
@@ -113,7 +178,7 @@ module GenRel(Guesser: GUESSER) = struct
         |> List.map guess_entry
 end
 
-module GR = GenRel(Nostradamus)
+module GR = GenRel(Guess3)
 
 let infer rwr =
   rwr |> GR.generate

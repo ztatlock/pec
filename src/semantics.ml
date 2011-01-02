@@ -124,7 +124,7 @@ let step_path p s =
   p |> Prog.path_edges
     |> List.map Prog.edge_instr
     |> List.fold_left step_instr (s, [])
-    |> fun (s, lns) -> (s, List.rev lns)
+    |> fun (s, links) -> (s, List.rev links)
 
 let vars_distinct (l, r) =
   Prog.path_vars l @
