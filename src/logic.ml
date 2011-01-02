@@ -21,9 +21,11 @@ type form =
   | Neq    of term * term
   | Pred   of string * term list
   | Conj   of form list
+  | Disj   of form list
   | Imply  of form * form
   (* forall term option represents firing pattern *)
   | Forall of string list * term option * form
+  | Exists of string list * form
 
 (* curried constructors *)
 let var v         = Var v
@@ -36,9 +38,11 @@ let eq a b        = Eq (a, b)
 let neq a b       = Neq (a, b)
 let pred p args   = Pred (p, args)
 let conj fs       = Conj fs
+let disj fs       = Disj fs
 let imply a b     = Imply (a, b)
 let forall v f    = Forall (v, None, f)
 let forallp v p f = Forall (v, p, f)
+let exists v f    = Exists (v, f)
 
 let start_l = L 0
 let start_r = R 0
@@ -87,13 +91,15 @@ let rec form_states = function
   | Pred (_, args) ->
       args |> List.map term_states
            |> List.flatten
-  | Conj fs ->
+  | Conj fs
+  | Disj fs ->
       fs |> List.map form_states
          |> List.flatten
   | Imply (a, b) ->
       (form_states a) @
       (form_states b)
-  | Forall (_, _, f) ->
+  | Forall (_, _, f)
+  | Exists (_, f) ->
       form_states f
 
 let form_states f =
@@ -152,6 +158,10 @@ let rec form_simp = function
       fs |> List.map form_simp
          |> String.concat "\n\n"
          |> mkstr "(AND\n\n%s\n\n)"
+  | Disj fs ->
+      fs |> List.map form_simp
+         |> String.concat "\n\n"
+         |> mkstr "(OR\n\n%s\n\n)"
   | Imply (a, b) ->
       String.concat "\n\n"
         [ "(IMPLIES"
@@ -179,6 +189,15 @@ let rec form_simp = function
       String.concat "\n\n"
         [ mkstr "(FORALL (%s)" v
         ; pat
+        ; form_simp f
+        ; ")"
+        ]
+  | Exists (vs, f) ->
+      let v =
+        String.concat " " vs
+      in
+      String.concat "\n\n"
+        [ mkstr "(EXISTS (%s)" v
         ; form_simp f
         ; ")"
         ]
@@ -218,25 +237,37 @@ let rec replace t1 t2 = function
   | Conj fs ->
       fs |> List.map (replace t1 t2)
          |> conj
+  | Disj fs ->
+      fs |> List.map (replace t1 t2)
+         |> disj
   | Imply (a, b) ->
       imply (replace t1 t2 a)
             (replace t1 t2 b)
   | Forall (vs, po, f) ->
       forallp vs po (replace t1 t2 f)
+  | Exists (vs, f) ->
+      exists vs (replace t1 t2 f)
+
+let replace_state s1 s2 =
+  replace (state s1) (state s2)
 
 let replace_start_l lN =
-  replace (state start_l)
-          (state lN)
+  replace_state start_l lN
 
 let replace_start_r rN =
-  replace (state start_r)
-          (state rN)
+  replace_state start_r rN
 
 (* simplify formula by simple axioms *)
 
 let flatten_ands conjs =
   conjs |> List.map
              (function Conj fs -> fs
+                     | _ as f  -> [f])
+        |> List.flatten
+
+let flatten_ors disjs =
+  disjs |> List.map
+             (function Disj fs -> fs
                      | _ as f  -> [f])
         |> List.flatten
 
@@ -259,6 +290,18 @@ let rec simp = function
            |> flatten_ands
            |> List.map simp
            |> conj
+  | Disj [] ->
+      False
+  | Disj [f] ->
+      f
+  | Disj fs ->
+      if List.mem True fs then
+        True
+      else
+        fs |> List.filter (fun f -> f <> False)
+           |> flatten_ors
+           |> List.map simp
+           |> disj
   | Imply (True, f) ->
       f
   | Imply (False, _) ->
@@ -267,6 +310,8 @@ let rec simp = function
       imply (simp a) (simp b)
   | Forall (vs, po, f) ->
       forallp vs po (simp f)
+  | Exists (vs, f) ->
+      exists vs (simp f)
 
 let rec simplify f1 =
   let f2 = simp f1 in
