@@ -361,8 +361,9 @@ let cfg_nodes g =
     |> Common.uniq
 
 let ancestors n =
-  let marks =
-    ref []
+  let marks = ref [] in
+  let mark n =
+    marks := n :: !marks
   in
   let marked n =
     List.mem
@@ -371,9 +372,6 @@ let ancestors n =
   in
   let unmarked n =
     not (marked n)
-  in
-  let mark n =
-    marks := n :: !marks
   in
   let rec crawl n =
     n |> preds
@@ -384,19 +382,76 @@ let ancestors n =
   crawl n;
   List.rev !marks
 
-let entry n =
+(* find all paths to nearest ancestors satisfying pred *)
+let paths_near_ancs_st pred n =
+  let rec search p =
+    p |> List.hd
+      |> preds
+      |> List.map (snoc p)
+      |> List.map step
+      |> List.flatten
+  and step p =
+    if pred (List.hd p) then
+      [p]
+    else if List.mem (List.hd p) p then
+      []
+    else
+      search p
+  in
+  search [n]
+
+let near_ancs_st pred n =
+  n |> paths_near_ancs_st pred
+    |> List.map List.hd
+    |> Common.uniq
+
+(*
+
+(* find nearest ancestors of n that satisfy pred *)
+let near_ancs_st pred n =
+  let marks = ref [] in
+  let mark n =
+    marks := n.nid :: !marks
+  in
+  let unmarked n =
+    not (List.mem n.nid !marks)
+  in
+  let ancs = ref [] in
+  let add_anc a =
+    ancs := a :: !ancs
+  in
+  let rec step n =
+    if pred n then
+      add_anc n
+    else
+      crawl n
+  and crawl n =
+    n |> preds
+      |> List.filter unmarked
+      |> ff (List.map mark)
+      |> List.iter step
+  in
+  crawl n;
+  List.rev !ancs
+
+*)
+
+let is_entry n =
   n.in_edges = []
 
-let exit n =
+let is_exit n =
   n.out_edges = []
+
+let is_branch n =
+  List.length n.out_edges > 1
 
 let entries g =
   g |> cfg_nodes
-    |> List.filter entry
+    |> List.filter is_entry
 
 let exits g =
   g |> cfg_nodes
-    |> List.filter exit
+    |> List.filter is_exit
 
 (* convert AST to CFG *)
 
@@ -463,6 +518,26 @@ let fromto src snk =
   List.find
     (fun e -> e.src.nid = src.nid)
     snk.in_edges
+
+(*
+ 
+let path_till snk src =
+  let rec loop m =
+    match succs m with
+    | [n] ->
+        if n.nid = snk.nid then
+          m :: n :: []
+        else
+          m :: (loop n)
+    | _ ->
+        failwith
+          (mkstr "path_till: no unique path to %d from %d"
+            snk.nid
+            src.nid)
+  in
+  loop src
+
+*)
 
 let path_edges p =
   let srcs = Common.drop_last p in
