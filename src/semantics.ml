@@ -1,13 +1,14 @@
 open ZPervasives
 open Logic
 
-let lkup s v       = func "lkup" [state s; pvar v]
-let eval s e       = func "eval" [state s; pexpr e]
-let step s i       = func "step" [state s; i]
-let assign v e     = func "Assign" [pvar v; e]
-let noread s e v   = pred "noread" [state s; pexpr e; pvar v]
-let nowrite s c v  = pred "nowrite" [state s; pcode c; pvar v]
-let noaffect s c e = pred "noaffect" [state s; pcode c; pexpr e]
+let lkup s v          = func "lkup" [state s; pvar v]
+let eval s e          = func "eval" [state s; pexpr e]
+let step s i          = func "step" [state s; i]
+let assign v e        = func "Assign" [pvar v; e]
+let noread s e v      = pred "noread" [state s; pexpr e; pvar v]
+let nowrite s c v     = pred "nowrite" [state s; pcode c; pvar v]
+let noaffect s c e    = pred "noaffect" [state s; pcode c; pexpr e]
+let nodisturb s c1 c2 = pred "nodisturb" [state s; pcode c1; pcode c2]
 
 (* evaluating expressions
  *
@@ -73,6 +74,8 @@ let apply_csc s c = function
       nowrite s c v
   | Prog.NoAffect e ->
       noaffect s c e
+  | Prog.NoDisturb c' ->
+      nodisturb s c c'
   | _ as sc ->
       sc |> Prog.side_cond_pretty
          |> mkstr "Bogus code side cond '%s'"
@@ -173,12 +176,20 @@ let pd_noaffect =
   ; ")"
   ]
 
+let pd_nodisturb =
+  [ "(DEFPRED (nodisturb state stmt1 stmt2)"
+  ; "  (EQ (step (step (step state stmt1) stmt2) stmt1)"
+  ; "      (step (step state stmt1) stmt2))"
+  ; ")"
+  ]
+
 let preds =
   [ pd_state_equiv
   ; pd_orig_equiv
   ; pd_noread
   ; pd_nowrite
   ; pd_noaffect
+  ; pd_nodisturb
   ]
   |> List.map (String.concat "\n")
   |> String.concat "\n\n"

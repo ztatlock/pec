@@ -53,9 +53,10 @@ rule token = parse
   | "where"  { WHERE  }
 
   (* side conditions *)
-  | "noread"   { NOREAD   }
-  | "nowrite"  { NOWRITE  }
-  | "noaffect" { NOAFFECT }
+  | "noread"    { NOREAD    }
+  | "nowrite"   { NOWRITE   }
+  | "noaffect"  { NOAFFECT  }
+  | "nodisturb" { NODISTURB }
 
   (* control flow *)
   | ";"     { SEMI  }

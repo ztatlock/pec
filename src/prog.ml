@@ -28,9 +28,12 @@ type var =
  *)
 
 type side_cond =
-  | NoRead   of var
-  | NoWrite  of var
-  | NoAffect of string (* expr evals same before and after *)
+  | NoRead    of var
+  | NoWrite   of var
+  (* expr evals same before and after *)
+  | NoAffect  of string
+  (* S2 nodisturb(S1) means S1; S2; S1 == S1; S2 *)
+  | NoDisturb of string
 
 type unop =
   | Not
@@ -103,6 +106,8 @@ let side_cond_str = function
       mkstr "(NoWrite %s)" (var_str v)
   | NoAffect e ->
       mkstr "(NoAffect %s)" e
+  | NoDisturb s ->
+      mkstr "(NoDistrub %s)" s
 
 let unop_str = function
   | Not -> "Not"
@@ -195,6 +200,8 @@ let side_cond_pretty = function
       mkstr "nowrite(%s)" (var_pretty v)
   | NoAffect e ->
       mkstr "noaffect(%s)" e
+  | NoDisturb s ->
+      mkstr "nodisturb(%s)" s
 
 let unop_pretty = function
   | Not -> "!"

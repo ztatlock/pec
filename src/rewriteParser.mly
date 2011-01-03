@@ -47,6 +47,7 @@ let parse_error s =
 %token NOREAD
 %token NOWRITE
 %token NOAFFECT
+%token NODISTURB
 
 %token SEMI
 %token IF
@@ -212,6 +213,8 @@ side_cond:
       { NoWrite $3 }
   | NOAFFECT LPAREN ID RPAREN
       { NoAffect $3 }
+  | NODISTURB LPAREN ID RPAREN
+      { NoDisturb $3 }
 
 %%
 
