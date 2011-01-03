@@ -7,10 +7,12 @@ stmt S
 V = E where noread(V);
 S where nowrite(V);
 S where noaffect(E);
+S where nodisturb(S);
 
 +++
 
 V = E where noread(V);
 S where nowrite(V);
 S where noaffect(E);
+S where nodisturb(S);
 

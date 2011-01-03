@@ -6,10 +6,10 @@ stmt S
 ---
 
 V = E where noread(V), noread(W);
-S where nowrite(V), noaffect(E);
+S where nowrite(V), noaffect(E), nodisturb(S);
 
 +++
 
 V = E where noread(V), noread(W);
-S where nowrite(V), noaffect(E);
+S where nowrite(V), noaffect(E), nodisturb(S);
 
