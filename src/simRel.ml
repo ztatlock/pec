@@ -58,24 +58,47 @@ let strong_post_path sN p =
   let s, links =
     Semantics.step_path p s0
   in
+  let f =
+    links
+      |> Logic.conj
+      |> Logic.replace_state s sN
+  in
   if s = s0 then
-    links
-      |> List.map (Logic.replace_state s sN)
-      |> Logic.conj
+    f
   else
-    links
-      |> List.map (Logic.replace_state s sN)
-      |> Logic.conj
-      |> Logic.exists [Logic.state_simp s0]
+    let vars =
+      f |> Logic.form_states
+        |> List.filter (fun s -> s <> sN)
+        |> List.map Logic.state_simp
+    in
+    Logic.exists vars f
+
+let log_path p =
+  p |> Prog.path_str
+    |> Common.log
+
+let log_form f =
+  Common.log "# initial formula";
+  f |> Logic.form_simp
+    |> Common.log;
+  Common.log "# simplified";
+  f |> Logic.simplify
+    |> Logic.form_simp
+    |> Common.log
 
 let strong_post sN n =
   let sticky x =
     Prog.is_entry  x ||
     Prog.is_branch x
   in
+  n |> Prog.nid
+    |> mkstr ">>> Strongest Post Condition for Node %d"
+    |> Common.log;
   n |> Prog.paths_near_ancs_st sticky
+    |> ff (List.iter log_path)
     |> List.map (strong_post_path sN)
     |> Logic.disj
+    |> ff log_form
 
 let strong_posts (l, r) =
   Logic.conj
@@ -178,7 +201,7 @@ module GenRel(Guesser: GUESSER) = struct
         |> List.map guess_entry
 end
 
-module GR = GenRel(Guess3)
+module GR = GenRel(Guess4)
 
 let infer rwr =
   rwr |> GR.generate

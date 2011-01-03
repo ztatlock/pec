@@ -393,7 +393,7 @@ let paths_near_ancs_st pred n =
   and step p =
     if pred (List.hd p) then
       [p]
-    else if List.mem (List.hd p) p then
+    else if List.mem (List.hd p) (List.tl p) then
       []
     else
       search p
