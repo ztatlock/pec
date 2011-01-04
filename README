@@ -28,6 +28,11 @@ RUNNING
 
     $ ./bin/bouncer -help
 
+  To run the regression tests:
+
+    $ ./script/test-parser.sh
+    $ ./script/test-relate.sh
+
 NOTES
 
   The tools in script/ depend on the environment variable BOUNCER which
