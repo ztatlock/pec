@@ -1,44 +1,48 @@
-Bouncer : Only let the good optimizations through.
+PEC : Automatically check the correctness of compiler optimizations.
 
 INTRO
 
   This software implements the checking algorithm from 'Proving
   Optimizations Correct using Parameterized Program Equivalence' by Kundu,
-  Tatlock, and Lerner in PLDI 2009. Bouncer attempts to automatically prove
+  Tatlock, and Lerner in PLDI 2009. PEC attempts to automatically prove
   that a given optimization always preserves program behavior.
 
   Optimizations are expressend as parameterized rewrite rules. See the
-  paper mentioned above and the examples under test/ for more info.
+  paper mentioned above and the examples under test/relate for more info.
 
 BUILDING
 
-  Bouncer depends on the OCaml language and supporting tools.
+  PEC depends on the OCaml language and supporting tools from:
+
+    http://caml.inria.fr/
+  
+  and the Z3 SMT solver from:
+
+    http://research.microsoft.com/en-us/um/redmond/projects/z3/
 
   To build simply:
 
     $ make
 
+  The tools in script/ depend on the environment variable PEC which
+  must be set to the toplevel directory of the project, e.g.
+
+    $ export PEC=/home/ztatlock/proj/pec
+
+  To avoid forgetting this incantation, tuck it into your ~/.bashrc
+
 RUNNING
 
-  To check an optmization in 'foo.rwr' run:
+  To check optmization 'foo.rwr' run:
 
-    $ ./bin/bouncer -input foo.rwr
+    $ ./bin/pec foo.rwr
 
   For more options see:
 
-    $ ./bin/bouncer -help
+    $ ./bin/pec --help
 
   To run the regression tests:
 
     $ ./script/test-parser.sh
     $ ./script/test-relate.sh
-
-NOTES
-
-  The tools in script/ depend on the environment variable BOUNCER which
-  must be set to the toplevel directory of the project, e.g.
-
-    $ export BOUNCER=/home/ztatlock/proj/bouncer
-
-  To avoid forgetting this incantation, tuck it into your ~/.bashrc
 
