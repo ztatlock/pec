@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
-PATH=$BOUNCER/bin:$PATH
+PATH=$PEC/bin:$PATH
 
 # ensure output dir exists
-mkdir -p $BOUNCER/output
+mkdir -p $PEC/output
 
 # ANSI color codes
 AC_NO=$'\033[0m'

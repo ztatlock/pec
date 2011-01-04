@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
-source $BOUNCER/script/common
+source $PEC/script/common
 
-TEST="$BOUNCER/test/parser/*.rwr"
-OUTP="$BOUNCER/output/parser"
+TEST="$PEC/test/parser/*.rwr"
+OUTP="$PEC/output/parser"
 
 function run {
   ckparse $1 > $OUTP-$2 2>&1

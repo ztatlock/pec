@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
-source $BOUNCER/script/common
+source $PEC/script/common
 
-TEST="$BOUNCER/test/relate/*.rwr"
-OUTP="$BOUNCER/output/relate"
+TEST="$PEC/test/relate/*.rwr"
+OUTP="$PEC/output/relate"
 
 function run {
   pec $1 \
