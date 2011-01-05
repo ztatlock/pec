@@ -1,0 +1,17 @@
+temp t
+orig x
+orig y
+expr E1
+expr E2
+
+---
+
+x = E1 + E2 where noread(x);
+y = E2;
+
++++
+
+t = E2;
+x = E1 + t;
+y = t;
+

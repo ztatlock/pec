@@ -7,8 +7,9 @@ INTRO
   Tatlock, and Lerner in PLDI 2009. PEC attempts to automatically prove
   that a given optimization always preserves program behavior.
 
-  Optimizations are expressend as parameterized rewrite rules. See the
-  paper mentioned above and the examples under test/relate for more info.
+  Optimizations are expressend as parameterized rewrite rules. See the PLDI
+  paper mentioned above, the examples later in this document, or the rules
+  under test/relate for more info.
 
 BUILDING
 
@@ -33,6 +34,11 @@ BUILDING
 
 RUNNING
 
+  First, ensure that z3 is on your PATH:
+
+    $ z3 -version
+    Z3 version 2.16
+
   To check optmization 'foo.rwr' run:
 
     $ ./bin/pec foo.rwr
@@ -45,4 +51,192 @@ RUNNING
 
     $ ./script/test-parser.sh
     $ ./script/test-relate.sh
+
+  Note that tests beginning with "n" are negative; we check that PEC fails
+  on them. Tests beginning with "p" are positive; on these we check that
+  PEC succeeds.
+
+CONTENTS
+
+  src/
+    PEC implementation in OCaml
+
+  bin/
+    executables and object files from PEC build
+
+  test/parser/
+  test/relate/
+    test cases for the parser and PEC checker respectively
+
+  script/
+    scripts for running PEC over test suites
+
+  output/
+    scratch space for scripts
+
+EXAMPLE
+
+  Consider the following simple rewrite rule to swap two constant
+  assignments:
+
+    DECLS
+
+      orig x
+      orig y
+
+    FIND
+
+      x = 1;
+      y = 2;
+
+    REPLACE
+
+      y = 2;
+      x = 1;
+
+  The first section, DECLS, lets PEC know type of metavariables used in the
+  rewrite rule. In this case, it declares that x and y are "original"
+  variables. Original variables represent locations whose final values must
+  be preserved by the rewrite. This is in contrast to "temporary" variables
+  which are fresh locations introduced by the rewrite; we do not require
+  temporary locations to be preserved.
+
+  The second section, FIND, represents a pattern to match against a
+  fragment of the input program. In this case, our FIND pattern will match
+  two assignments to distinct locations to hold the values 1 and 2
+  respectively.
+
+  The third section, REPLACE, specifies how to rewrite code which matches
+  the FIND pattern. In this case, we simply flip the order of the
+  assignments.
+
+  Next consider a simplified common subexpression elimination (CSE) rewrite:
+
+    DECLS
+
+      temp t
+      orig x
+      orig y
+      expr E1
+      expr E2
+
+    FIND
+
+      x = E1 + E2 where noread(x);
+      y = E2;
+
+    REPLACE
+
+      t = E2;
+      x = E1 + t;
+      y = t;
+
+  In this DECLS section we've introduced two new metavariable types: temp
+  and expr. As mentioned above, temp signifies a fresh location introduced
+  by the rewrite rule and we do not require such locations to be preserved.
+  The expr declaration represents an arbitrary, pure program expression.
+
+  This FIND pattern matches two assignments to distinct locations where the
+  first assigns the sum of two expressions, E1 and E2, while the second
+  only assigns the expression E2. Note the side condition "where noread(x)"
+  after the first occurence of E2 in FIND pattern. This side condition
+  restricts which expressions E2 can match. In this case it requires that
+  the expression matching E2 at this point in the input program does not
+  read the value of the location that x represents. Without this
+  restriction on E2 our rewrite rule would be unsound, i.e. it could change
+  the behavior of a program.
+
+  Here the REPLACE pattern first evaluates E2, storing the result in t and
+  then copies the FIND pattern, substituting t for E2 throughout.
+
+  Now let's make our CSE rewrite more general by allowing some code to
+  execute between the assignments to x and y:
+
+     DECLS
+
+      temp t
+      orig x
+      orig y
+      expr E1
+      expr E2
+      stmt S
+
+    FIND
+
+      x = E1 + E2 where noread(x);
+      S where noaffect(E2);
+      y = E2;
+
+    REPLACE
+
+      t = E2;
+      x = E1 + t;
+      S;
+      y = t;
+
+  The DECLS section above introduces our final metavariable type: stmt. A
+  stmt metavariable can match arbitrary program statements including
+  branches, loops, and function calls.
+
+  The FIND pattern adds the execution of S in between the assignments of x
+  and y. The side condition "where noaffect(E2)" requires that any code S
+  matches must not affect how expression E2 evaluates, i.e. E2 should
+  evaluate to the same value before and after executing S.
+
+  This brief overview covers the major features in PEC's rewrite rule
+  language. In general, side conditions should only occur within FIND
+  patterns and temporaries should only be found in REPLACE patterns. For
+  more examples look at the test suite of rewrite rules under
+  $PEC/test/relate. In this directory, files beginning with "n-" are
+  negative tests; PEC should fail to validate them. Files beginning with
+  "p-" are positive tests; PEC should be able to validate them.
+
+METAVARIABLE TYPES
+
+  There are four types of metavariables:
+
+    orig : location in the input program
+           must be preserved
+
+    temp : fresh location introduced by the rewrite
+           no need to preserve
+
+    expr : pure program expression
+           i.e. evaluation causes no side effects
+           so pure function calls are OK
+
+    stmt : program statement
+           includes function calls, branches, loops
+           assumed update state arbitrarily
+           
+SIDE CONDITIONS
+
+  E where noread(x)
+
+    Expression E evaluates to the same value regardless of what value is
+    stored at location x
+
+  S where nowrite(x)
+
+    Statment S does not change the value stored at location x.
+
+  S where noaffect(E)
+
+    Statement S does not change how expression E evaluates,
+    i.e. E evaluates to the same value before and after S.
+
+  S1 where nodisturb(S2)
+
+    S1 does not write to any location S2 reads from or writes to.
+    This means that S2; S1; S2 is the equivalent to S2; S1.
+
+CONTACT
+
+  Please send questions, bug reports, or feature requests to:
+
+    Zach Tatlock
+    ztatlock@cs.ucsd.edu
+
+
+Thanks for checking out PEC!
 
