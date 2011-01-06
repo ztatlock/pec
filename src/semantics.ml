@@ -178,8 +178,8 @@ let pd_noaffect =
 
 let pd_nodisturb =
   [ "(DEFPRED (nodisturb state stmt1 stmt2)"
-  ; "  (EQ (step (step (step state stmt1) stmt2) stmt1)"
-  ; "      (step (step state stmt1) stmt2))"
+  ; "  (EQ (step (step (step state stmt2) stmt1) stmt2)"
+  ; "      (step (step state stmt2) stmt1))"
   ; ")"
   ]
 
@@ -246,7 +246,6 @@ let ax_eval_expr_param_temp =
   ; "      (eval (step state (Assign (Temp var) val)) (PExpr expr))))"
   ]
 
-(* TODO change EQ to state_equiv ? *)
 let ax_eval_noread =
   [ "(FORALL (state1 state2 expr var val)"
   ; "  (IMPLIES"

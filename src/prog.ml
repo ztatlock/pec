@@ -32,7 +32,7 @@ type side_cond =
   | NoWrite   of var
   (* expr evals same before and after *)
   | NoAffect  of string
-  (* S2 nodisturb(S1) means S1; S2; S1 == S1; S2 *)
+  (* S1 nodisturb(S2) means S2; S1; S2 == S2; S1 *)
   | NoDisturb of string
 
 type unop =
