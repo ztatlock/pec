@@ -48,16 +48,18 @@ for o1 in ops:
     bot.append(b)
 
 print '''
-orig a
-expr e
+DECLS
 
----
+  orig a
+  expr e
 
-%s
+FIND
 
-+++
+  %s
 
-%s
+REPLACE
 
-''' % ('\n'.join(top), '\n'.join(bot))
+  %s
+
+''' % ('\n  '.join(top), '\n  '.join(bot))
 
