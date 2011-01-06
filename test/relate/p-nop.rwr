@@ -1,9 +1,11 @@
+DECLS
 
----
-
-nop;
-
-+++
-
-nop;
-
+  
+FIND
+  
+  nop;
+  
+REPLACE
+  
+  nop;
+  

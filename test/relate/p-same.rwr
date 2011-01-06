@@ -1,10 +1,12 @@
-stmt S
+DECLS
 
----
-
-S;
-
-+++
-
-S;
-
+  stmt S
+  
+FIND
+  
+  S;
+  
+REPLACE
+  
+  S;
+  

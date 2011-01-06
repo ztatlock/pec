@@ -1,14 +1,16 @@
+DECLS
 
-# comment
-
----
-
-     # S;
-nop; # !@#$%^
-     # x = y;
-
-+++
-
-# nop;
-nop;
-
+  
+  # comment
+  
+FIND
+  
+       # S;
+  nop; # !@#$%^
+       # x = y;
+  
+REPLACE
+  
+  # nop;
+  nop;
+  

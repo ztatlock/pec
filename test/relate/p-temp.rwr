@@ -1,12 +1,14 @@
+DECLS
 
-temp x
-expr e
-
----
-
-x = e;
-
-+++
-
-nop;
-
+  
+  temp x
+  expr e
+  
+FIND
+  
+  x = e;
+  
+REPLACE
+  
+  nop;
+  

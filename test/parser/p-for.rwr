@@ -1,15 +1,17 @@
-expr E
-stmt S
+DECLS
 
----
-
-for(S; E; S) {
-  S;
-}
-
-+++
-
-for(S; E; S) {
-  S;
-}
-
+  expr E
+  stmt S
+  
+FIND
+  
+  for(S; E; S) {
+    S;
+  }
+  
+REPLACE
+  
+  for(S; E; S) {
+    S;
+  }
+  

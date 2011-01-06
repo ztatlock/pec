@@ -1,15 +1,17 @@
-expr E
-stmt S
+DECLS
 
----
-
-while(E) {
-  S;
-}
-
-+++
-
-while(E) {
-  S;
-}
-
+  expr E
+  stmt S
+  
+FIND
+  
+  while(E) {
+    S;
+  }
+  
+REPLACE
+  
+  while(E) {
+    S;
+  }
+  

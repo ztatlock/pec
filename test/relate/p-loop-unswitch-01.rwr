@@ -1,27 +1,29 @@
-expr E1
-expr E2
-stmt S1
-stmt S2
+DECLS
 
----
-
-while(E1) {
+  expr E1
+  expr E2
+  stmt S1
+  stmt S2
+  
+FIND
+  
+  while(E1) {
+    if(E2) {
+      S1 where noaffect(E2);
+    } else {
+      S2 where noaffect(E2);
+    }
+  }
+  
+REPLACE
+  
   if(E2) {
-    S1 where noaffect(E2);
+    while(E1) {
+      S1;
+    }
   } else {
-    S2 where noaffect(E2);
+    while(E1) {
+      S2;
+    }
   }
-}
-
-+++
-
-if(E2) {
-  while(E1) {
-    S1;
-  }
-} else {
-  while(E1) {
-    S2;
-  }
-}
-
+  

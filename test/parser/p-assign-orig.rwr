@@ -1,11 +1,13 @@
-orig x
-expr e
+DECLS
 
----
-
-x = e;
-
-+++
-
-x = e;
-
+  orig x
+  expr e
+  
+FIND
+  
+  x = e;
+  
+REPLACE
+  
+  x = e;
+  

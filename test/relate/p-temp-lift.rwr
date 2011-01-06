@@ -1,16 +1,18 @@
-temp t
-orig x
-expr E
-stmt S
+DECLS
 
----
-
-S where noaffect(E);
-x = E;
-
-+++
-
-t = E;
-S;
-x = t;
-
+  temp t
+  orig x
+  expr E
+  stmt S
+  
+FIND
+  
+  S where noaffect(E);
+  x = E;
+  
+REPLACE
+  
+  t = E;
+  S;
+  x = t;
+  

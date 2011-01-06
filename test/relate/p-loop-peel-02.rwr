@@ -1,19 +1,21 @@
-orig i
-orig n
-stmt S
+DECLS
 
----
-
-assume(n > 0);
-for(i = 0; i < n; i++) {
-  S where nowrite(i);
-}
-
-+++
-
-i = 0;
-S;
-for(i = 1; i < n; i++) {
+  orig i
+  orig n
+  stmt S
+  
+FIND
+  
+  assume(n > 0);
+  for(i = 0; i < n; i++) {
+    S where nowrite(i);
+  }
+  
+REPLACE
+  
+  i = 0;
   S;
-}
-
+  for(i = 1; i < n; i++) {
+    S;
+  }
+  

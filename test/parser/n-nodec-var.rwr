@@ -1,10 +1,12 @@
-expr e
+DECLS
 
----
-
-x = e;
-
-+++
-
-x = e;
-
+  expr e
+  
+FIND
+  
+  x = e;
+  
+REPLACE
+  
+  x = e;
+  

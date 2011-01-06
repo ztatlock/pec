@@ -1,33 +1,35 @@
-temp t
-orig x
-orig y
-expr E1
-expr E2
-stmt S1
-stmt S2
-stmt S3
+DECLS
 
----
-
-if(E1) {
-  S1;
-  x = E2 where noread(x);
-  S2 where noaffect(E2);
-} else {
-  S3;
-}
-y = E2;
-
-+++
-
-if(E1) {
-  S1;
-  t = E2;
-  x = t;
-  S2;
-  y = t;
-} else {
-  S3;
+  temp t
+  orig x
+  orig y
+  expr E1
+  expr E2
+  stmt S1
+  stmt S2
+  stmt S3
+  
+FIND
+  
+  if(E1) {
+    S1;
+    x = E2 where noread(x);
+    S2 where noaffect(E2);
+  } else {
+    S3;
+  }
   y = E2;
-}
-
+  
+REPLACE
+  
+  if(E1) {
+    S1;
+    t = E2;
+    x = t;
+    S2;
+    y = t;
+  } else {
+    S3;
+    y = E2;
+  }
+  

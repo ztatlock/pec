@@ -1,34 +1,36 @@
-orig x
-expr y
-expr z
+DECLS
 
----
-
-x = y || z;
-x = y && z;
-x = y == z;
-x = y != z;
-x = y <  z;
-x = y <= z;
-x = y >  z;
-x = y >= z;
-x = y +  z;
-x = y -  z;
-x = y *  z;
-x = y /  z;
-
-+++
-
-x = y || z;
-x = y && z;
-x = y == z;
-x = y != z;
-x = y <  z;
-x = y <= z;
-x = y >  z;
-x = y >= z;
-x = y +  z;
-x = y -  z;
-x = y *  z;
-x = y /  z;
-
+  orig x
+  expr y
+  expr z
+  
+FIND
+  
+  x = y || z;
+  x = y && z;
+  x = y == z;
+  x = y != z;
+  x = y <  z;
+  x = y <= z;
+  x = y >  z;
+  x = y >= z;
+  x = y +  z;
+  x = y -  z;
+  x = y *  z;
+  x = y /  z;
+  
+REPLACE
+  
+  x = y || z;
+  x = y && z;
+  x = y == z;
+  x = y != z;
+  x = y <  z;
+  x = y <= z;
+  x = y >  z;
+  x = y >= z;
+  x = y +  z;
+  x = y -  z;
+  x = y *  z;
+  x = y /  z;
+  

@@ -1,25 +1,27 @@
-expr E
-stmt S1
-stmt S2
-stmt S3
+DECLS
 
----
-
-if(E) {
-  S1;
-} else {
-  S2;
-}
-S3;
-
-+++
-
-if(E) {
-  S1;
-  # forget to lift stmt
-  # S3;
-} else {
-  S2;
+  expr E
+  stmt S1
+  stmt S2
+  stmt S3
+  
+FIND
+  
+  if(E) {
+    S1;
+  } else {
+    S2;
+  }
   S3;
-}
-
+  
+REPLACE
+  
+  if(E) {
+    S1;
+    # forget to lift stmt
+    # S3;
+  } else {
+    S2;
+    S3;
+  }
+  

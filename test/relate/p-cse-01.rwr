@@ -1,20 +1,22 @@
-temp t
-orig x
-orig y
-expr E1
-expr E2
-stmt S
+DECLS
 
----
-
-x = E1 + E2 where noread(x);
-S where noaffect(E2);
-y = E2;
-
-+++
-
-t = E2;
-x = E1 + t;
-S;
-y = t;
-
+  temp t
+  orig x
+  orig y
+  expr E1
+  expr E2
+  stmt S
+  
+FIND
+  
+  x = E1 + E2 where noread(x);
+  S where noaffect(E2);
+  y = E2;
+  
+REPLACE
+  
+  t = E2;
+  x = E1 + t;
+  S;
+  y = t;
+  

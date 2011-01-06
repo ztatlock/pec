@@ -1,17 +1,19 @@
-orig x
-orig y
-expr e
-stmt s
+DECLS
 
----
-
-x = e where noread(x);
-s where nowrite(x), noaffect(e);
-y = e;
-
-+++
-
-x = e;
-s;
-y = x;
-
+  orig x
+  orig y
+  expr e
+  stmt s
+  
+FIND
+  
+  x = e where noread(x);
+  s where nowrite(x), noaffect(e);
+  y = e;
+  
+REPLACE
+  
+  x = e;
+  s;
+  y = x;
+  

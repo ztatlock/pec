@@ -1,15 +1,17 @@
-orig V
-orig W
-expr E
-stmt S
+DECLS
 
----
-
-V = E where noread(V), noread(W);
-S where nowrite(V), noaffect(E), nodisturb(S);
-
-+++
-
-V = E where noread(V), noread(W);
-S where nowrite(V), noaffect(E), nodisturb(S);
-
+  orig V
+  orig W
+  expr E
+  stmt S
+  
+FIND
+  
+  V = E where noread(V), noread(W);
+  S where nowrite(V), noaffect(E), nodisturb(S);
+  
+REPLACE
+  
+  V = E where noread(V), noread(W);
+  S where nowrite(V), noaffect(E), nodisturb(S);
+  

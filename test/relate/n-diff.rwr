@@ -1,11 +1,13 @@
-stmt S1
-stmt S2
+DECLS
 
----
-
-S1;
-
-+++
-
-S2;
-
+  stmt S1
+  stmt S2
+  
+FIND
+  
+  S1;
+  
+REPLACE
+  
+  S2;
+  

@@ -1,29 +1,31 @@
-orig I
-orig N
-expr E
-stmt S1
-stmt S2
+DECLS
 
----
-
-for(I=0; I<N; I++) {
-  if(E where noread(I)) {
-    S1 where noaffect(E);
-  } else {
-    S2 where noaffect(E);
-  }
-}
-
-+++
-
-if(E) {
+  orig I
+  orig N
+  expr E
+  stmt S1
+  stmt S2
+  
+FIND
+  
   for(I=0; I<N; I++) {
-    S1;
+    if(E where noread(I)) {
+      S1 where noaffect(E);
+    } else {
+      S2 where noaffect(E);
+    }
   }
-} else {
-  # off by one
-  for(I=0; I<=N; I++) {
-    S2;
+  
+REPLACE
+  
+  if(E) {
+    for(I=0; I<N; I++) {
+      S1;
+    }
+  } else {
+    # off by one
+    for(I=0; I<=N; I++) {
+      S2;
+    }
   }
-}
-
+  

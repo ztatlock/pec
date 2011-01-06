@@ -1,10 +1,12 @@
-orig I
+DECLS
 
----
-
-I++;
-
-+++
-
-I++;
-
+  orig I
+  
+FIND
+  
+  I++;
+  
+REPLACE
+  
+  I++;
+  

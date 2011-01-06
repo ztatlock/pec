@@ -1,13 +1,15 @@
-temp t
-orig x
-expr E
+DECLS
 
----
-
-x = E;
-
-+++
-
-t = E;
-x = t;
-
+  temp t
+  orig x
+  expr E
+  
+FIND
+  
+  x = E;
+  
+REPLACE
+  
+  t = E;
+  x = t;
+  

@@ -1,11 +1,13 @@
-orig a
-expr e
+DECLS
 
----
-
-a = e != e >= e;
-
-+++
-
-a = e != (e >= e);
-
+  orig a
+  expr e
+  
+FIND
+  
+  a = e != e >= e;
+  
+REPLACE
+  
+  a = e != (e >= e);
+  

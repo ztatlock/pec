@@ -1,19 +1,21 @@
-expr E
-stmt S
+DECLS
 
----
-
-if(E) {
-  S;
-} else {
-  S;
-}
-
-+++
-
-if(E) {
-  S;
-} else {
-  S;
-}
-
+  expr E
+  stmt S
+  
+FIND
+  
+  if(E) {
+    S;
+  } else {
+    S;
+  }
+  
+REPLACE
+  
+  if(E) {
+    S;
+  } else {
+    S;
+  }
+  

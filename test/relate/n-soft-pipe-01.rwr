@@ -1,22 +1,24 @@
-expr E
-stmt S1
-stmt S2
+DECLS
 
----
-
-assume(E);
-while(E) {
-  S1; 
-      # omit side conds
-  S2; # where noaffect(E);
-}
-
-+++
-
-S1;
-while(E) {
-  S2;
+  expr E
+  stmt S1
+  stmt S2
+  
+FIND
+  
+  assume(E);
+  while(E) {
+    S1; 
+        # omit side conds
+    S2; # where noaffect(E);
+  }
+  
+REPLACE
+  
   S1;
-}
-S2;
-
+  while(E) {
+    S2;
+    S1;
+  }
+  S2;
+  

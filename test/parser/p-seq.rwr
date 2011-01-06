@@ -1,56 +1,58 @@
-orig I
-expr E
-stmt S
+DECLS
 
----
-
-nop;
-
-I = E;
-
-S;
-
-if(E) {
+  orig I
+  expr E
+  stmt S
+  
+FIND
+  
+  nop;
+  
+  I = E;
+  
   S;
-}
-
-if(E) {
+  
+  if(E) {
+    S;
+  }
+  
+  if(E) {
+    S;
+  } else {
+    S;
+  }
+  
+  while(E) {
+    S;
+  }
+  
+  for(S; E; S) {
+    S;
+  }
+  
+REPLACE
+  
+  nop;
+  
+  I = E;
+  
   S;
-} else {
-  S;
-}
-
-while(E) {
-  S;
-}
-
-for(S; E; S) {
-  S;
-}
-
-+++
-
-nop;
-
-I = E;
-
-S;
-
-if(E) {
-  S;
-}
-
-if(E) {
-  S;
-} else {
-  S;
-}
-
-while(E) {
-  S;
-}
-
-for(S; E; S) {
-  S;
-}
-
+  
+  if(E) {
+    S;
+  }
+  
+  if(E) {
+    S;
+  } else {
+    S;
+  }
+  
+  while(E) {
+    S;
+  }
+  
+  for(S; E; S) {
+    S;
+  }
+  

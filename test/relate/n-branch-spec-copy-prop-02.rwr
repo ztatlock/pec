@@ -1,34 +1,36 @@
-orig x
-orig y
-expr E1
-expr E2
-stmt S1
-stmt S2
-stmt S3
+DECLS
 
----
-
-if(E1) {
-  S1;
-  x = E2 where noread(x);
-  S2 where nowrite(x), noaffect(E2);
-} else {
-  S3;
-}
-
-y = E2;
-
-+++
-
-if(E1) {
-  S1;
-  x = E2;
-  S2;
-  y = x;
-} else {
-  S3;
-
-  # assign from x instead of E2
-  y = x;
-}
-
+  orig x
+  orig y
+  expr E1
+  expr E2
+  stmt S1
+  stmt S2
+  stmt S3
+  
+FIND
+  
+  if(E1) {
+    S1;
+    x = E2 where noread(x);
+    S2 where nowrite(x), noaffect(E2);
+  } else {
+    S3;
+  }
+  
+  y = E2;
+  
+REPLACE
+  
+  if(E1) {
+    S1;
+    x = E2;
+    S2;
+    y = x;
+  } else {
+    S3;
+  
+    # assign from x instead of E2
+    y = x;
+  }
+  
