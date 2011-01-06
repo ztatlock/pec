@@ -22,9 +22,10 @@ let line =
   '\n'
 
 rule token = parse
-  (* pattern delimeters *)
-  | "---" { FIND    }
-  | "+++" { REPLACE }
+  (* rule section delimeters *)
+  | "DECLS"   { DECLS   }
+  | "FIND"    { FIND    }
+  | "REPLACE" { REPLACE }
 
   (* operators *)
   | "!"  { NOT }

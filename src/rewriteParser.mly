@@ -27,6 +27,7 @@ let parse_error s =
 
 %}
 
+%token DECLS
 %token FIND
 %token REPLACE
 
@@ -83,8 +84,8 @@ let parse_error s =
 %%
 
 rewrite:
-  | decls FIND stmt REPLACE stmt EOF
-      {mkast $3, mkast $5}
+  | DECLS decls FIND stmt REPLACE stmt EOF
+      {mkast $4, mkast $6}
 
 decls:
   |            { }
