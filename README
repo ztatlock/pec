@@ -94,8 +94,8 @@ EXAMPLE
       y = 2;
       x = 1;
 
-  The first section, DECLS, lets PEC know type of metavariables used in the
-  rewrite rule. In this case, it declares that x and y are "original"
+  The first section, DECLS, lets PEC know the type of metavariables used in
+  the rewrite rule. In this case, it declares that x and y are "original"
   variables. Original variables represent locations whose final values must
   be preserved by the rewrite. This is in contrast to "temporary" variables
   which are fresh locations introduced by the rewrite; we do not require
@@ -103,7 +103,7 @@ EXAMPLE
 
   The second section, FIND, represents a pattern to match against a
   fragment of the input program. In this case, our FIND pattern will match
-  two assignments to distinct locations to hold the values 1 and 2
+  two assignments updating distinct locations to hold the values 1 and 2
   respectively.
 
   The third section, REPLACE, specifies how to rewrite code which matches
