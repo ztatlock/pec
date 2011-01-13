@@ -322,7 +322,16 @@ let rec simplify f1 =
 
 (* dispatch atp query *)
 
+let nQueries = ref 0
+
+let log_query () =
+  incr nQueries;
+  !nQueries
+    |> mkstr ">>> Query # %d"
+    |> Common.log
+
 let z3 query =
+  log_query ();
   let f0, f1 =
     mkstr "%s/z3-input"  (Flags.get "scratch"),
     mkstr "%s/z3-output" (Flags.get "scratch")
