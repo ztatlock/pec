@@ -21,11 +21,14 @@ function check {
 
 for t in $TEST; do
   nm=$(basename $t .rwr)
-  printf "%-30s " $nm
+  tm1=$(date +%s)
   if check $t $nm; then
-    echo $PASS
+    res=$PASS
   else
-    echo $FAIL
+    res=$FAIL
   fi
+  tm2=$(date +%s)
+  sec=$(expr $tm2 - $tm1)
+  printf "%-30s %s  %d\n" $nm $res $sec
 done
 
