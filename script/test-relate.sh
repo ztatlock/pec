@@ -25,18 +25,17 @@ function nQueries {
     | awk '{ print $NF }'
 }
 
+echo "Test                           Check Lns Sec ATP"
+echo "------------------------------------------------"
+
 for t in $TEST; do
-  nm=$(basename $t .rwr)
+  tnm=$(basename $t .rwr)
   tm1=$(date +%s)
-  if check $t $nm; then
-    res=$PASS
-  else
-    res=$FAIL
-  fi
+  res=$(check $t $tnm && echo $PASS || echo $FAIL)
   tm2=$(date +%s)
   lns=$(wc -l $t | awk '{ print $1 }')
   sec=$(expr $tm2 - $tm1)
-  nqs=$(nQueries $nm)
-  printf "%-30s %s  %2d  %2d  %2d\n" $nm $res $lns $sec $nqs
+  nqs=$(nQueries $tnm)
+  printf "%-30s %16s %3d %3d %3d\n" $tnm $res $lns $sec $nqs
 done
 
