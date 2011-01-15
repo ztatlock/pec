@@ -1,0 +1,28 @@
+
+DECLS
+
+  orig i
+  orig n
+  orig m
+  stmt S
+
+FIND
+
+  assume(m > 0);
+  for(i=0; i<n; i++) {
+    S where nowrite(i), nowrite(n), nowrite(m);
+
+    # TODO get rid of this unnecessary side condition
+    assume(m > 0);
+  }
+
+REPLACE
+                # possibly off by one
+  for(i=0; i<n-m+2; i++) {
+    S;
+  }
+
+  for(nop; i<n; i++) {
+    S;
+  }
+

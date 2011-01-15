@@ -1,0 +1,22 @@
+
+DECLS
+  
+  orig i
+  orig n
+  stmt S
+
+FIND
+
+  assume(n > 0);
+  for(i=0; i < 2*n; i++) {
+    S where nowrite(n);
+    assume(n > 0);
+  }
+
+REPLACE
+
+  for(i=0; i<n; i++) {
+    S;
+    S;
+  }
+

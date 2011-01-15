@@ -1,0 +1,18 @@
+
+DECLS
+
+  expr E
+  stmt S
+
+FIND
+
+  # omit side condition justifying the fold
+  # assume(E);
+  if(E) {
+    S;
+  }
+
+REPLACE
+
+  S;
+

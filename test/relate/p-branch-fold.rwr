@@ -1,0 +1,17 @@
+
+DECLS
+
+  expr E
+  stmt S
+
+FIND
+
+  assume(E);
+  if(E) {
+    S;
+  }
+
+REPLACE
+
+  S;
+

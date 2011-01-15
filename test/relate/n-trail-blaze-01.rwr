@@ -1,0 +1,27 @@
+
+DECLS
+
+  expr E
+  stmt S1
+  stmt S2
+  stmt S3
+
+FIND
+
+  S1 where noaffect(E);
+  if(E) {
+    S2;
+  } else {
+    S3;
+  }
+
+REPLACE
+
+  if(E) {
+    S1;
+    S2;
+  } else {
+    S2; # fat finger S2 instead of S1
+    S3;
+  }
+
