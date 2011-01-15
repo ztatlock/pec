@@ -319,5 +319,6 @@ let background =
     ; ")                                                                     "
     ; "                                                                      "
     ; ";; END BACKGROUND                                                     "
+    ; "                                                                      "
     ]
 
