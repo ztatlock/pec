@@ -31,13 +31,9 @@ let apply_esc s e = function
 
 let rec eval_expr s = function
   | Prog.IntLit i ->
-      ( Int i
-      , []
-      )
+      (Int i, [])
   | Prog.Var v ->
-      ( lkup s v
-      , []
-      )
+      (lkup s v, [])
   | Prog.Unop (o, e) ->
       let (v, scs) =
         eval_expr s e
@@ -140,189 +136,183 @@ let vars_distinct (l, r) =
 
 (* background for reasoning about program executions *)
 
-let background =
-  String.concat "\n"
-    [ ";; EQUIVALENCE PREDICATES                                             "
-    ; "                                                                      "
-    ; "(DEFPRED (state_equiv state1 state2)                                  "
-    ; "  (FORALL (var)                                                       "
-    ; "    (EQ (lkup state1 var)                                             "
-    ; "        (lkup state2 var)))                                           "
-    ; ")                                                                     "
-    ; "                                                                      "
-    ; "(DEFPRED (orig_equiv state1 state2)                                   "
-    ; "  (FORALL (id)                                                        "
-    ; "    (EQ (lkup state1 (Orig id))                                       "
-    ; "        (lkup state2 (Orig id))))                                     "
-    ; ")                                                                     "
-    ; "                                                                      "
-    ; ";; SIDE CONDITION PREDICATES                                          "
-    ; "                                                                      "
-    ; "(DEFPRED (noread state expr var)                                      "
-    ; "  (FORALL (val)                                                       "
-    ; "      (EQ (eval state expr)                                           "
-    ; "          (eval (step state (Assign var val)) expr)))                 "
-    ; ")                                                                     "
-    ; "                                                                      "
-    ; "(DEFPRED (nowrite state stmt var)                                     "
-    ; "  (EQ (lkup state var)                                                "
-    ; "      (lkup (step state stmt) var))                                   "
-    ; ")                                                                     "
-    ; "                                                                      "
-    ; "(DEFPRED (noaffect state stmt expr)                                   "
-    ; "  (EQ (eval state expr)                                               "
-    ; "      (eval (step state stmt) expr))                                  "
-    ; ")                                                                     "
-    ; "                                                                      "
-    ; "(DEFPRED (nodisturb stateCur stmt1 stmt2)                             "
-    ; "  (FORALL (statePrev)                                                 "
-    ; "    (IMPLIES (EQ stateCur (step statePrev stmt2))                     "
-    ; "             (EQ (step (step stateCur stmt1) stmt2)                   "
-    ; "                 (step stateCur stmt1))))                             "
-    ; ")                                                                     "
-    ; "                                                                      "
-    ; ";; SEMANTICS                                                          "
-    ; "                                                                      "
-    ; "(BG_PUSH                                                              "
-    ; "  (FORALL (x y)                                                       "
-    ; "    (NEQ (Orig x) (Temp y)))                                          "
-    ; ")                                                                     "
-    ; "                                                                      "
-    ; "(BG_PUSH                                                              "
-    ; "  (FORALL (state stmt var)                                            "
-    ; "    (EQ (lkup state (Temp var))                                       "
-    ; "        (lkup (step state (PCode stmt)) (Temp var))))                 "
-    ; ")                                                                     "
-    ; "                                                                      "
-    ; "(BG_PUSH                                                              "
-    ; "  (FORALL (state1 state2 stmt)                                        "
-    ; "    (IMPLIES                                                          "
-    ; "      (orig_equiv state1 state2)                                      "
-    ; "      (orig_equiv (step state1 stmt)                                  "
-    ; "                  (step state2 stmt))))                               "
-    ; ")                                                                     "
-    ; "                                                                      "
-    ; "(BG_PUSH                                                              "
-    ; "  (FORALL (state var expr)                                            "
-    ; "    (EQ (lkup (step state (Assign var expr)) var)                     "
-    ; "        expr))                                                        "
-    ; ")                                                                     "
-    ; "                                                                      "
-    ; "(BG_PUSH                                                              "
-    ; "  (FORALL (state var1 var2 expr)                                      "
-    ; "    (IMPLIES (NEQ var1 var2)                                          "
-    ; "             (EQ (lkup (step state (Assign var1 expr)) var2)          "
-    ; "                 (lkup state var2))))                                 "
-    ; ")                                                                     "
-    ; "                                                                      "
-    ; "(BG_PUSH                                                              "
-    ; "  (FORALL (state1 state2 expr)                                        "
-    ; "    (IMPLIES (state_equiv state1 state2)                              "
-    ; "             (EQ (eval state1 expr)                                   "
-    ; "                 (eval state2 expr))))                                "
-    ; ")                                                                     "
-    ; "                                                                      "
-    ; "(BG_PUSH                                                              "
-    ; "  (FORALL (state1 state2 expr)                                        "
-    ; "    (IMPLIES (orig_equiv state1 state2)                               "
-    ; "             (EQ (eval state1 (PExpr expr))                           "
-    ; "                 (eval state2 (PExpr expr)))))                        "
-    ; ")                                                                     "
-    ; "                                                                      "
-    ; "(BG_PUSH                                                              "
-    ; "  (FORALL (state expr var val)                                        "
-    ; "    (EQ (eval state (PExpr expr))                                     "
-    ; "        (eval (step state (Assign (Temp var) val)) (PExpr expr))))    "
-    ; ")                                                                     "
-    ; "                                                                      "
-    ; "(BG_PUSH                                                              "
-    ; "  (FORALL (state1 state2 expr var val)                                "
-    ; "    (IMPLIES                                                          "
-    ; "      (AND (EQ state2 (step state1 (Assign var val)))                 "
-    ; "           (noread state2 expr var))                                  "
-    ; "      (EQ (eval state1 expr)                                          "
-    ; "          (eval state2 expr))))                                       "
-    ; ")                                                                     "
-    ; "                                                                      "
-    ; "(BG_PUSH                                                              "
-    ; "  (FORALL (expr)                                                      "
-    ; "    (IMPLIES (NEQ 0 (Not expr))                                       "
-    ; "             (EQ  0 expr)))                                           "
-    ; ")                                                                     "
-    ; "                                                                      "
-    ; "(BG_PUSH                                                              "
-    ; "  (FORALL (expr1 expr2)                                               "
-    ; "    (EQ (Add expr1 expr2)                                             "
-    ; "        (+ expr1 expr2)))                                             "
-    ; ")                                                                     "
-    ; "                                                                      "
-    ; "(BG_PUSH                                                              "
-    ; "  (FORALL (expr1 expr2)                                               "
-    ; "    (EQ (Sub expr1 expr2)                                             "
-    ; "        (- expr1 expr2)))                                             "
-    ; ")                                                                     "
-    ; "                                                                      "
-    ; "(BG_PUSH                                                              "
-    ; "  (FORALL (expr1 expr2)                                               "
-    ; "    (EQ (Mul expr1 expr2)                                             "
-    ; "        (* expr1 expr2)))                                             "
-    ; ")                                                                     "
-    ; "                                                                      "
-    ; "(BG_PUSH                                                              "
-    ; "  (FORALL (expr1 expr2)                                               "
-    ; "    (EQ (Div expr1 expr2)                                             "
-    ; "        (/ expr1 expr2)))                                             "
-    ; ")                                                                     "
-    ; "                                                                      "
-    ; "(BG_PUSH                                                              "
-    ; "  (FORALL (expr1 expr2)                                               "
-    ; "    (IMPLIES (NEQ 0 (Lt expr1 expr2))                                 "
-    ; "             (< expr1 expr2)))                                        "
-    ; ")                                                                     "
-    ; "                                                                      "
-    ; "(BG_PUSH                                                              "
-    ; "  (FORALL (expr1 expr2)                                               "
-    ; "    (IMPLIES (NEQ 0 (Lte expr1 expr2))                                "
-    ; "             (<= expr1 expr2)))                                       "
-    ; ")                                                                     "
-    ; "                                                                      "
-    ; "(BG_PUSH                                                              "
-    ; "  (FORALL (expr1 expr2)                                               "
-    ; "    (IMPLIES (NEQ 0 (Gt expr1 expr2))                                 "
-    ; "             (> expr1 expr2)))                                        "
-    ; ")                                                                     "
-    ; "                                                                      "
-    ; "(BG_PUSH                                                              "
-    ; "  (FORALL (expr1 expr2)                                               "
-    ; "    (IMPLIES (NEQ 0 (Gte expr1 expr2))                                "
-    ; "             (>= expr1 expr2)))                                       "
-    ; ")                                                                     "
-    ; "                                                                      "
-    ; "(BG_PUSH                                                              "
-    ; "  (FORALL (expr1 expr2)                                               "
-    ; "    (EQ (Not (Lt expr1 expr2))                                        "
-    ; "        (Gte expr1 expr2)))                                           "
-    ; ")                                                                     "
-    ; "                                                                      "
-    ; "(BG_PUSH                                                              "
-    ; "  (FORALL (expr1 expr2)                                               "
-    ; "    (EQ (Not (Lte expr1 expr2))                                       "
-    ; "        (Gt expr1 expr2)))                                            "
-    ; ")                                                                     "
-    ; "                                                                      "
-    ; "(BG_PUSH                                                              "
-    ; "  (FORALL (expr1 expr2)                                               "
-    ; "    (EQ (Not (Gt expr1 expr2))                                        "
-    ; "        (Lte expr1 expr2)))                                           "
-    ; ")                                                                     "
-    ; "                                                                      "
-    ; "(BG_PUSH                                                              "
-    ; "  (FORALL (expr1 expr2)                                               "
-    ; "    (EQ (Not (Gte expr1 expr2))                                       "
-    ; "        (Lt expr1 expr2)))                                            "
-    ; ")                                                                     "
-    ; "                                                                      "
-    ; ";; END BACKGROUND                                                     "
-    ; "                                                                      "
-    ]
+let background = "
+;; STATE EQUIVALENCE
+
+(DEFPRED (orig_equiv state1 state2)
+  (FORALL (id)
+    (EQ (lkup state1 (Orig id))
+        (lkup state2 (Orig id))))
+)
+
+;; SIDE CONDITIONS
+
+(DEFPRED (noread state expr var)
+  (FORALL (val)
+      (EQ (eval state expr)
+          (eval (step state (Assign var val)) expr)))
+)
+
+(DEFPRED (nowrite state stmt var)
+  (EQ (lkup state var)
+      (lkup (step state stmt) var))
+)
+
+(DEFPRED (noaffect state stmt expr)
+  (EQ (eval state expr)
+      (eval (step state stmt) expr))
+)
+
+(DEFPRED (nodisturb stateCur stmt1 stmt2)
+  (FORALL (statePrev)
+    (IMPLIES (EQ stateCur (step statePrev stmt2))
+             (EQ (step (step stateCur stmt1) stmt2)
+                 (step stateCur stmt1))))
+)
+
+;; SEMANTICS
+
+; orig and temp locations never overlap
+(BG_PUSH
+  (FORALL (x y) (NEQ (Orig x) (Temp y)))
+)
+
+; if you assign V = E and then look up V, you get E
+(BG_PUSH
+  (FORALL (state var expr)
+    (EQ (lkup (step state (Assign var expr)) var) expr))
+)
+
+; if you assign V1 = E, nothing changes for V2 <> V1
+(BG_PUSH
+  (FORALL (state var1 var2 expr)
+    (IMPLIES (NEQ var1 var2)
+             (EQ (lkup (step state (Assign var1 expr)) var2)
+                 (lkup state var2))))
+)
+
+; stepping the same statement preserves orig_equiv
+(BG_PUSH
+  (FORALL (state1 state2 stmt)
+    (IMPLIES
+      (orig_equiv state1 state2)
+      (orig_equiv (step state1 stmt)
+                  (step state2 stmt))))
+)
+
+; code params never write to temp locations
+(BG_PUSH
+  (FORALL (state stmt var)
+    (EQ (lkup state (Temp var))
+        (lkup (step state (PCode stmt)) (Temp var))))
+)
+
+; expr params only read orig locations
+(BG_PUSH
+  (FORALL (state1 state2 expr)
+    (IMPLIES (orig_equiv state1 state2)
+             (EQ (eval state1 (PExpr expr))
+                 (eval state2 (PExpr expr)))))
+)
+
+; expr params never read temp locations
+(BG_PUSH
+  (FORALL (state expr var val)
+    (EQ (eval state (PExpr expr))
+        (eval (step state (Assign (Temp var) val)) (PExpr expr))))
+)
+
+; help z3 understand noread
+(BG_PUSH
+  (FORALL (state1 state2 expr var val)
+    (IMPLIES
+      (AND (EQ state2 (step state1 (Assign var val)))
+           (noread state2 expr var))
+      (EQ (eval state1 expr)
+          (eval state2 expr))))
+)
+
+;; OPERATORS
+
+(BG_PUSH
+  (FORALL (expr)
+    (IMPLIES (NEQ 0 (Not expr))
+             (EQ 0 expr)))
+)
+
+(BG_PUSH
+  (FORALL (expr1 expr2)
+    (EQ (Add expr1 expr2)
+        (+ expr1 expr2)))
+)
+
+(BG_PUSH
+  (FORALL (expr1 expr2)
+    (EQ (Sub expr1 expr2)
+        (- expr1 expr2)))
+)
+
+(BG_PUSH
+  (FORALL (expr1 expr2)
+    (EQ (Mul expr1 expr2)
+        (* expr1 expr2)))
+)
+
+(BG_PUSH
+  (FORALL (expr1 expr2)
+    (EQ (Div expr1 expr2)
+        (/ expr1 expr2)))
+)
+
+(BG_PUSH
+  (FORALL (expr1 expr2)
+    (IMPLIES (NEQ 0 (Lt expr1 expr2))
+             (< expr1 expr2)))
+)
+
+(BG_PUSH
+  (FORALL (expr1 expr2)
+    (IMPLIES (NEQ 0 (Lte expr1 expr2))
+             (<= expr1 expr2)))
+)
+
+(BG_PUSH
+  (FORALL (expr1 expr2)
+    (IMPLIES (NEQ 0 (Gt expr1 expr2))
+             (> expr1 expr2)))
+)
+
+(BG_PUSH
+  (FORALL (expr1 expr2)
+    (IMPLIES (NEQ 0 (Gte expr1 expr2))
+             (>= expr1 expr2)))
+)
+
+(BG_PUSH
+  (FORALL (expr1 expr2)
+    (EQ (Not (Lt expr1 expr2))
+        (Gte expr1 expr2)))
+)
+
+(BG_PUSH
+  (FORALL (expr1 expr2)
+    (EQ (Not (Lte expr1 expr2))
+        (Gt expr1 expr2)))
+)
+
+(BG_PUSH
+  (FORALL (expr1 expr2)
+    (EQ (Not (Gt expr1 expr2))
+        (Lte expr1 expr2)))
+)
+
+(BG_PUSH
+  (FORALL (expr1 expr2)
+    (EQ (Not (Gte expr1 expr2))
+        (Lt expr1 expr2)))
+)
+
+;; END BACKGROUND
+
+"
 
