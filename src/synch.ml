@@ -21,6 +21,16 @@ module SkipNonCode = struct
       |> List.for_all skip_instr
 end
 
+module SkipNonCode_SkipSC = struct
+  let skip_instr = function
+    | Prog.Code (s, scs) -> List.mem Prog.skip scs
+    | _                  -> true
+
+  let skip n =
+    n |> Prog.succ_instrs
+      |> List.for_all skip_instr
+end
+
 module Walker(Skipper: SKIPPER) = struct
 
   (* remember pairs of paths already seen *)
@@ -88,8 +98,9 @@ module Walker(Skipper: SKIPPER) = struct
     get_paths ()
 end
 
-module SA = Walker(SkipAll)
-module NC = Walker(SkipNonCode)
+module Sall         = Walker(SkipAll)
+module Snoncode     = Walker(SkipNonCode)
+module Snoncode_ssc = Walker(SkipNonCode_SkipSC)
 
 (* heuristics to pick walker *)
 
@@ -112,10 +123,10 @@ let infer rwr =
   let walker =
     if no_branches rwr then begin
       Common.log ">>> Using Skip All";
-      SA.infer
+      Sall.infer
     end else begin
-      Common.log ">>> Using Skip Non Code";
-      NC.infer
+      Common.log ">>> Using Skip Non Code w/ Skip Side Cond";
+      Snoncode_ssc.infer
     end
   in
   rwr |> walker

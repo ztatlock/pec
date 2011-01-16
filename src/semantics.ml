@@ -70,6 +70,8 @@ let rec eval_expr s = function
 
 (* handle code parameter side conditions *)
 let apply_csc s c = function
+  | Prog.Skip ->
+      True
   | Prog.NoWrite v ->
       nowrite s c v
   | Prog.NoAffect e ->

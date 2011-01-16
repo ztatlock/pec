@@ -54,6 +54,7 @@ rule token = parse
   | "where"  { WHERE  }
 
   (* side conditions *)
+  | "skip"      { SKIP      }
   | "noread"    { NOREAD    }
   | "nowrite"   { NOWRITE   }
   | "noaffect"  { NOAFFECT  }

@@ -28,6 +28,7 @@ type var =
  *)
 
 type side_cond =
+  | Skip
   | NoRead    of var
   | NoWrite   of var
   (* expr evals same before and after *)
@@ -100,6 +101,8 @@ let var_str = function
   | Temp id -> mkstr "(Temp %s)" id
 
 let side_cond_str = function
+  | Skip ->
+      "(Skip)"
   | NoRead v ->
       mkstr "(NoRead %s)" (var_str v)
   | NoWrite v ->
@@ -194,6 +197,8 @@ let var_pretty = function
   | Temp v -> v
 
 let side_cond_pretty = function
+  | Skip ->
+      "skip"
   | NoRead v ->
       mkstr "noread(%s)" (var_pretty v)
   | NoWrite v ->
@@ -257,6 +262,9 @@ let rec instr_pretty = function
 
 let mkast s =
   { root = s }
+
+let skip =
+  Skip
 
 let assume c =
   Assume c

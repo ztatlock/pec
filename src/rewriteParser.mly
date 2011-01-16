@@ -45,6 +45,7 @@ let parse_error s =
 %token ASSUME
 %token WHERE
 
+%token SKIP
 %token NOREAD
 %token NOWRITE
 %token NOAFFECT
@@ -208,6 +209,8 @@ side_conds:
       { $1 :: $3 }
 
 side_cond:
+  | SKIP
+      { Skip }
   | NOREAD LPAREN var RPAREN
       { NoRead $3 }
   | NOWRITE LPAREN var RPAREN
