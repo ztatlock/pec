@@ -8,13 +8,13 @@ FIND
   
   assume(E);
   while(E) {
-    S1 where noaffect(E);
+    S1 where skip, noaffect(E);
     S2 where nodisturb(S1);
   }
   
 REPLACE
   
-  S1;
+  S1 where skip;
   while(E) {
     S2;
   }
