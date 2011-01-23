@@ -51,11 +51,17 @@ type expr =
   | Binop  of binop * expr * expr
   | Expr   of string * side_cond list
 
+(* S[I = E] means t = I;
+ *                I = E;
+ *                S where nowrite(I);
+ *                I = t;
+ *)
+
 type instr =
   | Nop
   | Assign of var * expr
   | Assume of expr
-  | Code   of string * expr list * side_cond list
+  | Code   of string * (var * expr) list * side_cond list
 
 type stmt =
   | Instr  of instr
@@ -142,15 +148,14 @@ let rec instr_str = function
   | Nop ->
       "Nop"
   | Assign (v, e) ->
-      mkstr "(Assign %s %s)"
-        (var_str v)
-        (expr_str e)
+      mkstr "(Assign %s %s)" (var_str v) (expr_str e)
   | Assume e ->
       mkstr "(Assume %s)"
         (expr_str e)
   | Code (c, eps, scs) ->
       let es, ss =
-        eps |> List.map expr_str
+        eps |> List.map
+                (fun (v, e) -> mkstr "(%s, %s)" (var_str v) (expr_str e))
             |> String.concat "; ",
         scs |> List.map side_cond_str
             |> String.concat "; "
@@ -245,25 +250,22 @@ let rec instr_pretty = function
       "nop"
   | Assign (v1, Binop (Add, Var v2, IntLit 1))
     when v1 = v2 ->
-      mkstr "%s++"
-        (var_pretty v1)
+      mkstr "%s++" (var_pretty v1)
   | Assign (v, e) ->
-      mkstr "%s = %s"
-        (var_pretty v)
-        (expr_pretty e)
+      mkstr "%s = %s" (var_pretty v) (expr_pretty e)
   | Assume e ->
       expr_pretty e
   | Code (c, eps, []) ->
       let es =
-        eps |> List.map expr_pretty
-            |> List.map (mkstr "[%s]")
+        eps |> List.map
+                (fun (v, e) -> mkstr "[%s => %s]" (var_pretty v) (expr_pretty e))
             |> String.concat ""
       in
       mkstr "%s%s" c es
   | Code (c, eps, scs) ->
       let es, ss =
-        eps |> List.map expr_pretty
-            |> List.map (mkstr "[%s]")
+        eps |> List.map
+                (fun (v, e) -> mkstr "[%s => %s]" (var_pretty v) (expr_pretty e))
             |> String.concat "",
         scs |> List.map side_cond_pretty
             |> String.concat ", "
@@ -277,6 +279,9 @@ let mkast s =
 
 let skip =
   Skip
+
+let fresh_temp () =
+  Temp (mkstr "FRESH_%d" (tock ()))
 
 let assume c =
   Assume c

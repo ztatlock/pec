@@ -147,7 +147,7 @@ instr:
 
 eparams:
   | { [] }
-  | LSQUARE expr RSQUARE eparams { $2 :: $4 }
+  | LSQUARE var ASSIGN expr RSQUARE eparams { ($2, $4) :: $6 }
 
 var:
   | ID { match lkup_decl $1 with

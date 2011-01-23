@@ -79,7 +79,7 @@ let apply_csc s c = function
          |> mkstr "Bogus code side cond '%s'"
          |> failwith 
 
-let step_instr (s1, links) = function
+let rec step_instr (s1, links) = function
   | Prog.Nop ->
       (s1, links)
   | Prog.Assign (pv, e) ->
@@ -91,6 +91,21 @@ let step_instr (s1, links) = function
       let v, scs = eval_expr s1 e in
       let ln     = neq (Int 0) v in
       (s1, scs @ ln :: links)
+  | Prog.Code (c, (v,e)::eps, scs) ->
+      let t  = Prog.fresh_temp () in
+      List.fold_left step_instr (s1, links)
+        [ Prog.Assign (t, Prog.Var v)
+        ; Prog.Assign (v, e)
+        ; Prog.Code (c, eps, Prog.NoWrite(v) :: scs)
+        ; Prog.Assign (v, Prog.Var t)
+        ]
+  | Prog.Code (c, [], scs) ->
+      let s2   = next_state s1 in
+      let ln   = eq (state s2) (step s1 (pcode c [])) in
+      let sscs = List.map (apply_csc s1 c) scs in
+      (s2, sscs @ ln :: links)
+
+(*
   | Prog.Code (c, eps, scs) ->
       let es, escs =
         eps |> List.map (eval_expr s1)
@@ -101,6 +116,8 @@ let step_instr (s1, links) = function
       let ln   = eq (state s2) (step s1 (pcode c es)) in
       let sscs = List.map (apply_csc s1 c) scs in
       (s2, escs @ sscs @ ln :: links)
+*)
+
 
 let step_path p s =
   p |> Prog.path_edges
