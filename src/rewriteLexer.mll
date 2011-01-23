@@ -74,12 +74,14 @@ rule token = parse
   | "stmt" { STMT_DECL }
 
   (* misc *)
-  | "," { COMMA  }
-  | "(" { LPAREN }
-  | ")" { RPAREN }
-  | "{" { LCURL  }
-  | "}" { RCURL  }
-  | eof { EOF    }
+  | "," { COMMA   }
+  | "(" { LPAREN  }
+  | ")" { RPAREN  }
+  | "{" { LCURL   }
+  | "}" { RCURL   }
+  | "[" { LSQUARE }
+  | "]" { RSQUARE }
+  | eof { EOF     }
 
   (* variables *)
   | id as x { ID x }

@@ -23,8 +23,8 @@ end
 
 module SkipNonCode_SkipSC = struct
   let skip_instr = function
-    | Prog.Code (s, scs) -> List.mem Prog.skip scs
-    | _                  -> true
+    | Prog.Code (s, _, scs) -> List.mem Prog.skip scs
+    | _                     -> true
 
   let skip n =
     n |> Prog.succ_instrs

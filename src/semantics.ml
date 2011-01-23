@@ -6,9 +6,9 @@ let eval s e          = func "eval" [state s; pexpr e]
 let step s i          = func "step" [state s; i]
 let assign v e        = func "Assign" [pvar v; e]
 let noread s e v      = pred "noread" [state s; pexpr e; pvar v]
-let nowrite s c v     = pred "nowrite" [state s; pcode c; pvar v]
-let noaffect s c e    = pred "noaffect" [state s; pcode c; pexpr e]
-let nodisturb s c1 c2 = pred "nodisturb" [state s; pcode c1; pcode c2]
+let nowrite s c v     = pred "nowrite" [state s; pcode c []; pvar v]
+let noaffect s c e    = pred "noaffect" [state s; pcode c []; pexpr e]
+let nodisturb s c1 c2 = pred "nodisturb" [state s; pcode c1 []; pcode c2 []]
 
 (* evaluating expressions
  *
@@ -81,45 +81,26 @@ let apply_csc s c = function
 
 let step_instr (s1, links) = function
   | Prog.Nop ->
-      ( s1
-      , links
-      )
+      (s1, links)
   | Prog.Assign (pv, e) ->
-      let (v, scs) =
-        eval_expr s1 e
-      in
-      let s2 =
-        next_state s1
-      in
-      let ln =
-        eq (state s2)
-           (step s1 (assign pv v))
-      in
-      ( s2
-      , scs @ ln :: links
-      )
+      let s2     = next_state s1 in
+      let v, scs = eval_expr s1 e in
+      let ln     = eq (state s2) (step s1 (assign pv v)) in
+      (s2, scs @ ln :: links)
   | Prog.Assume e ->
-      let (v, scs) =
-        eval_expr s1 e
+      let v, scs = eval_expr s1 e in
+      let ln     = neq (Int 0) v in
+      (s1, scs @ ln :: links)
+  | Prog.Code (c, eps, scs) ->
+      let es, escs =
+        eps |> List.map (eval_expr s1)
+            |> List.split
       in
-      let ln =
-        neq (Int 0) v
-      in
-      ( s1
-      , scs @ ln :: links
-      )
-  | Prog.Code (c, scs) ->
-      let s2 = next_state s1 in
-      let ln =
-        eq (state s2)
-           (step s1 (pcode c))
-      in
-      let sclns =
-        List.map (apply_csc s1 c) scs
-      in
-      ( s2
-      , sclns @ ln :: links
-      )
+      let escs = List.flatten escs in
+      let s2   = next_state s1 in
+      let ln   = eq (state s2) (step s1 (pcode c es)) in
+      let sscs = List.map (apply_csc s1 c) scs in
+      (s2, escs @ sscs @ ln :: links)
 
 let step_path p s =
   p |> Prog.path_edges

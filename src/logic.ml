@@ -10,7 +10,7 @@ type term =
   | Var   of string
   | PVar  of Prog.var
   | PExpr of string
-  | PCode of string
+  | PCode of string * term list
   | State of state
   | Func  of string * term list
 
@@ -31,7 +31,7 @@ type form =
 let var v         = Var v
 let pvar v        = PVar v
 let pexpr e       = PExpr e
-let pcode c       = PCode c
+let pcode c eps   = PCode (c, eps)
 let state s       = State s
 let func f args   = Func (f, args)
 let eq a b        = Eq (a, b)
@@ -128,8 +128,12 @@ let rec term_simp = function
       mkstr "(Temp %s)" v
   | PExpr e ->
       mkstr "(PExpr %s)" e
-  | PCode c ->
+  | PCode (c, []) ->
       mkstr "(PCode %s)" c
+  | PCode (c, args) ->
+      args |> List.map term_simp
+           |> String.concat " "
+           |> mkstr "(PCode (%s %s))" c
   | State s ->
       state_simp s
   | Func (f, args) ->

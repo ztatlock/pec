@@ -65,6 +65,8 @@ let parse_error s =
 %token COMMA
 %token LPAREN
 %token RPAREN
+%token LSQUARE
+%token RSQUARE
 %token LCURL
 %token RCURL
 %token EOF
@@ -132,16 +134,20 @@ instr:
       { Assign ($1, Binop (Add, Var $1, IntLit 1)) }
   | ASSUME LPAREN expr RPAREN
       { Assume $3 }
-  | ID
+  | ID eparams
       { match lkup_decl $1 with
-        | StmtDecl -> Code ($1, [])
+        | StmtDecl -> Code ($1, $2, [])
         | _ -> failwith (mkstr "'%s' not declared as stmt." $1)
       }
-  | ID WHERE side_conds
+  | ID eparams WHERE side_conds
       { match lkup_decl $1 with
-        | StmtDecl -> Code ($1, $3)
+        | StmtDecl -> Code ($1, $2, $4)
         | _ -> failwith (mkstr "'%s' not declared as stmt." $1)
       }
+
+eparams:
+  | { [] }
+  | LSQUARE expr RSQUARE eparams { $2 :: $4 }
 
 var:
   | ID { match lkup_decl $1 with

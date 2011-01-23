@@ -55,9 +55,7 @@ type instr =
   | Nop
   | Assign of var * expr
   | Assume of expr
-  | Code   of string * side_cond list
-  (* TODO : Code param with holes : S[I] *)
-  (* PCode of string * expr list * side_cond list *)
+  | Code   of string * expr list * side_cond list
 
 type stmt =
   | Instr  of instr
@@ -150,10 +148,14 @@ let rec instr_str = function
   | Assume e ->
       mkstr "(Assume %s)"
         (expr_str e)
-  | Code (c, scs) ->
-      scs |> List.map side_cond_str
-          |> String.concat "; "
-          |> mkstr "(Code (%s, [%s]))" c
+  | Code (c, eps, scs) ->
+      let es, ss =
+        eps |> List.map expr_str
+            |> String.concat "; ",
+        scs |> List.map side_cond_str
+            |> String.concat "; "
+      in
+      mkstr "(Code (%s, [%s], [%s]))" c es ss
 
 let rec stmt_str = function
   | Instr i ->
@@ -251,12 +253,22 @@ let rec instr_pretty = function
         (expr_pretty e)
   | Assume e ->
       expr_pretty e
-  | Code (c, []) ->
-      c
-  | Code (c, scs) ->
-      scs |> List.map side_cond_pretty
-          |> String.concat ", "
-          |> mkstr "%s where %s" c
+  | Code (c, eps, []) ->
+      let es =
+        eps |> List.map expr_pretty
+            |> List.map (mkstr "[%s]")
+            |> String.concat ""
+      in
+      mkstr "%s%s" c es
+  | Code (c, eps, scs) ->
+      let es, ss =
+        eps |> List.map expr_pretty
+            |> List.map (mkstr "[%s]")
+            |> String.concat "",
+        scs |> List.map side_cond_pretty
+            |> String.concat ", "
+      in
+      mkstr "%s%s where %s" c es ss
 
 (* AST utilities *)
 
