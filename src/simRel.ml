@@ -28,8 +28,8 @@ let exec_neq_code (l, r) =
     Prog.succ_instrs l,
     Prog.succ_instrs r
   with
-  | [Prog.Code (sl, _, _)],
-    [Prog.Code (sr, _, _)] ->
+  | [Prog.Code (sl, _)],
+    [Prog.Code (sr, _)] ->
       sl <> sr
   | _ ->
       false

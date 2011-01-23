@@ -108,7 +108,7 @@ stmt:
 
 basic_stmt:
   | instr SEMI
-      { Instr $1 }
+      { $1 }
   | IF LPAREN expr RPAREN LCURL stmt RCURL
       { If ($3, $6) }
   | IF LPAREN expr RPAREN LCURL stmt RCURL ELSE LCURL stmt RCURL
@@ -117,9 +117,9 @@ basic_stmt:
       { While ($3, $6) }
   | FOR LPAREN instr SEMI expr SEMI instr RPAREN LCURL stmt RCURL
       { let h =
-          { init   = Instr $3
+          { init   = $3
           ; guard  = $5
-          ; update = Instr $7
+          ; update = $7
           }
         in
         For (h, $10)
@@ -127,33 +127,39 @@ basic_stmt:
 
 instr:
   | NOP
-      { Nop }
+      { Instr Nop }
   | var ASSIGN expr
-      { Assign ($1, $3) }
+      { Instr (Assign ($1, $3)) }
   | var ADD ADD
-      { Assign ($1, Binop (Add, Var $1, IntLit 1)) }
+      { Instr (Assign ($1, Binop (Add, Var $1, IntLit 1))) }
   | ASSUME LPAREN expr RPAREN
-      { Assume $3 }
-  | ID eparams
-      { match lkup_decl $1 with
-        | StmtDecl -> Code ($1, $2, [])
-        | _ -> failwith (mkstr "'%s' not declared as stmt." $1)
-      }
-  | ID eparams WHERE side_conds
-      { match lkup_decl $1 with
-        | StmtDecl -> Code ($1, $2, $4)
-        | _ -> failwith (mkstr "'%s' not declared as stmt." $1)
-      }
+      { Instr (Assume $3) }
+  | stmtid
+      { Instr (Code ($1, [])) }
+  | stmtid eparams
+      { PCode ($1, $2, []) }
+  | stmtid WHERE side_conds
+      { Instr (Code ($1, $3)) }
+  | stmtid eparams WHERE side_conds
+      { PCode ($1, $2, $4) }
 
 eparams:
-  | { [] }
-  | LSQUARE var ASSIGN expr RSQUARE eparams { ($2, $4) :: $6 }
+  | LSQUARE var ASSIGN expr RSQUARE
+      { ($2, $4) :: [] }
+  | LSQUARE var ASSIGN expr RSQUARE eparams
+      { ($2, $4) :: $6 }
 
 var:
   | ID { match lkup_decl $1 with
          | OrigDecl -> Orig $1
          | TempDecl -> Temp $1
          | _ -> failwith (mkstr "'%s' not declared as var." $1)
+       }
+
+stmtid:
+  | ID { match lkup_decl $1 with
+         | StmtDecl -> $1
+         | _ -> failwith (mkstr "'%s' not declared as stmt." $1)
        }
 
 expr:

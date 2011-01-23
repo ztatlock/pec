@@ -31,10 +31,15 @@ type side_cond =
   | Skip
   | NoRead    of var
   | NoWrite   of var
-  (* expr evals same before and after *)
   | NoAffect  of string
-  (* S1 nodisturb(S2) means S2; S1; S2 == S2; S1 *)
   | NoDisturb of string
+
+(* S  where skip          -- do not place a simrel entry before stmt S
+ * E  where noread(I)     -- expr E does not read from var I
+ * S  where nowrite(I)    -- stmt S does not write to var I
+ * S  where noaffect(E)   -- stmt S does change how expr E evals
+ * S1 where nodisturb(S2) -- S2; S1; S2 == S2; S1
+ *)
 
 type unop =
   | Not
@@ -51,20 +56,15 @@ type expr =
   | Binop  of binop * expr * expr
   | Expr   of string * side_cond list
 
-(* S[I = E] means t = I;
- *                I = E;
- *                S where nowrite(I);
- *                I = t;
- *)
-
 type instr =
   | Nop
   | Assign of var * expr
   | Assume of expr
-  | Code   of string * (var * expr) list * side_cond list
+  | Code   of string * side_cond list
 
 type stmt =
   | Instr  of instr
+  | PCode  of string * (var * expr) list * side_cond list
   | Seq    of stmt * stmt
   | If     of expr * stmt
   | IfElse of expr * stmt * stmt
@@ -76,6 +76,12 @@ and for_header =
   ; guard  : expr
   ; update : stmt
   }
+
+(* S[I = E] means t = I;
+ *                I = E;
+ *                S where nowrite(I);
+ *                I = t;
+ *)
 
 type ast =
   { root : stmt }
@@ -152,20 +158,22 @@ let rec instr_str = function
   | Assume e ->
       mkstr "(Assume %s)"
         (expr_str e)
-  | Code (c, eps, scs) ->
+  | Code (c, scs) ->
+      scs |> List.map side_cond_str
+          |> String.concat "; "
+          |> mkstr "(Code (%s, [%s]))" c
+
+let rec stmt_str = function
+  | Instr i ->
+      mkstr "(Instr %s)" (instr_str i)
+  | PCode (c, eqs, scs) ->
       let es, ss =
-        eps |> List.map
-                (fun (v, e) -> mkstr "(%s, %s)" (var_str v) (expr_str e))
+        eqs |> List.map (Common.pair_str var_str expr_str)
             |> String.concat "; ",
         scs |> List.map side_cond_str
             |> String.concat "; "
       in
-      mkstr "(Code (%s, [%s], [%s]))" c es ss
-
-let rec stmt_str = function
-  | Instr i ->
-      mkstr "(Instr %s)"
-        (instr_str i)
+      mkstr "(PCode (%s, [%s], [%s]))" c es ss
   | Seq (s1, s2) ->
       mkstr "(Seq %s %s)"
         (stmt_str s1)
@@ -255,22 +263,12 @@ let rec instr_pretty = function
       mkstr "%s = %s" (var_pretty v) (expr_pretty e)
   | Assume e ->
       expr_pretty e
-  | Code (c, eps, []) ->
-      let es =
-        eps |> List.map
-                (fun (v, e) -> mkstr "[%s => %s]" (var_pretty v) (expr_pretty e))
-            |> String.concat ""
-      in
-      mkstr "%s%s" c es
-  | Code (c, eps, scs) ->
-      let es, ss =
-        eps |> List.map
-                (fun (v, e) -> mkstr "[%s => %s]" (var_pretty v) (expr_pretty e))
-            |> String.concat "",
-        scs |> List.map side_cond_pretty
-            |> String.concat ", "
-      in
-      mkstr "%s%s where %s" c es ss
+  | Code (c, []) ->
+      c
+  | Code (c, scs) ->
+      scs |> List.map side_cond_pretty
+          |> String.concat ", "
+          |> mkstr "%s where %s" c
 
 (* AST utilities *)
 
@@ -294,6 +292,23 @@ let desugar_for h b =
       , While ( h.guard
               , Seq ( b
                     , h.update)))
+
+let seqs =
+  List.fold_left
+    (fun s1 s2 -> Seq (s1, s2))
+    (Instr Nop)
+
+let rec desugar_pcode c eqs scs =
+  match eqs with
+  | [] ->
+      Instr (Code (c, scs))
+  | (v, e) :: eqs ->
+      let t = fresh_temp () in
+      seqs [ Instr (Assign (t, (Var v)))
+           ; Instr (Assign (v, e))
+           ; desugar_pcode c eqs (NoWrite v :: scs)
+           ; Instr (Assign (v, (Var t)))
+           ]
 
 let rec expr_vars = function
   | IntLit _ ->
@@ -494,6 +509,8 @@ let ast_cfg a =
         let n = mknode () in
         add_edge n root i;
         n
+    | PCode (c, eqs, scs) ->
+        add (desugar_pcode c eqs scs) root
     | Seq (s1, s2) ->
         root |> add s2
              |> add s1

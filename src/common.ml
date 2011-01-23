@@ -24,6 +24,9 @@ let uniq l =
 let pair_up l rs =
   List.map (fun r -> (l, r)) rs
 
+let pair_str a_str b_str (a, b) =
+  mkstr "(%s, %s)" (a_str a) (b_str b)
+
 let xprod ls rs =
   ls |> List.map (fun l -> pair_up l rs)
      |> List.flatten
