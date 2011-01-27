@@ -1,0 +1,19 @@
+DECLS
+
+  orig i
+  orig j
+  orig k
+  stmt S
+  
+FIND
+  
+  S[i = j];
+  S[i = i + 1];
+  S[i = k][j = k][k = i];
+  
+REPLACE
+
+  S[i = j];
+  S[i = i + 1];
+  S[i = k][j = k][k = i];
+  

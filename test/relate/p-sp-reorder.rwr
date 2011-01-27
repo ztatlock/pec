@@ -1,0 +1,18 @@
+DECLS
+
+  orig I
+  stmt S1
+  stmt S2
+
+FIND
+
+  S2 nowrite(I);
+  I++;
+  S1[I];
+
+REPLACE
+
+  S1[I+1];
+  S2;
+  I++;
+
