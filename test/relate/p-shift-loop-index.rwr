@@ -1,7 +1,7 @@
 
 DECLS
 
-  orig I
+  temp I
   orig N
   stmt S
 

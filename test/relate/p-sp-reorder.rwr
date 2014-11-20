@@ -6,13 +6,13 @@ DECLS
 
 FIND
 
-  S2 nowrite(I);
+  S2 where nowrite(I);
   I++;
-  S1[I];
+  S1;
 
 REPLACE
 
-  S1[I+1];
+  S1[I = I+1];
   S2;
   I++;
 
