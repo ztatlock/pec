@@ -1,0 +1,17 @@
+
+DECLS
+
+  stmt S
+
+FIND
+
+  while(1) {
+    S;
+  }
+
+REPLACE
+
+  while(1) {
+    S;
+    S;
+  }
