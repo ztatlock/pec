@@ -337,7 +337,7 @@ let log_query () =
 let z3 query =
   log_query ();
   let f0, f1 =
-    mkstr "%s/z3-input"  (Flags.get "scratch"),
+    mkstr "%s/z3-input.simplify"  (Flags.get "scratch"),
     mkstr "%s/z3-output" (Flags.get "scratch")
   in
   (* run z3 on input f0, send output to f1, check result *)
