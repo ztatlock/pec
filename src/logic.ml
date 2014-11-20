@@ -342,7 +342,8 @@ let z3 query =
   in
   (* run z3 on input f0, send output to f1, check result *)
   Common.str_file f0 query;
-  mkstr "z3 -s %s > %s" f0 f1
+  let repo = Unix.getenv "PEC" in
+  mkstr "%s/script/z3-linux-x86 -s %s > %s" repo f0 f1
     |> Unix.system
     |> ignore;
   Common.file_str f1 = "1: Valid."
