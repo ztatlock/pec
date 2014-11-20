@@ -28,7 +28,7 @@ BUILDING
   The tools in script/ depend on the environment variable PEC which
   must be set to the toplevel directory of the project, e.g.
 
-    $ export PEC=/home/ztatlock/proj/pec
+    $ export PEC="$HOME/pec"
 
   To avoid forgetting this incantation, tuck it into your ~/.bashrc
 
