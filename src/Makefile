@@ -1,5 +1,5 @@
 BUILD = ocamlbuild
-SLINK = ln --symbolic --force
+SLINK = ln -s -f
 
 FLAGS = \
 	-libs unix,str \
